@@ -1,5 +1,5 @@
 /**
- * APP.JS - Phiên bản cập nhật tổng 10 câu hỏi
+ * APP.JS - Phiên bản cập nhật (ẩn điểm, điểm tối thiểu = 5)
  * Phân bổ: 5 NB, 2 TH, 3 VD
  */
 
@@ -12,6 +12,9 @@ let selectedStudent = null;
 
 // Link Google Script (Giữ nguyên link của bạn)
 const GOOGLE_API = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
+
+// Tùy biến
+const MIN_SCORE = 5; // điểm tối thiểu
 
 // --- 1. HÀM TẢI DỮ LIỆU ---
 async function loadData() {
@@ -36,7 +39,6 @@ async function loadData() {
 }
 
 // --- 2. HÀM XỬ LÝ DROPDOWN ---
-
 function loadClasses() {
   const select = document.getElementById("select-class");
   if (!select) return;
@@ -71,7 +73,6 @@ function loadStudents(className) {
 }
 
 // --- 3. HÀM XỬ LÝ ĐỀ THI ---
-
 const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
 
 function buildQuiz() {
@@ -82,14 +83,11 @@ function buildQuiz() {
   const TH = questions.filter(q => q.level === "TH");
   const VD = questions.filter(q => q.level === "VD");
 
-  // TẠO ĐỀ: Đã sửa để lấy tổng cộng 10 câu
+  // TẠO ĐỀ: tổng 10 câu như yêu cầu
   quiz = [
-    // 5 NB (có 20 câu nên an toàn)
-    ...shuffle(NB).slice(0, 5), 
-    // 2 TH (chỉ có 2 câu nên lấy hết)
-    ...shuffle(TH).slice(0, 2), 
-    // 3 VD (có 4 câu nên lấy 3)
-    ...shuffle(VD).slice(0, 3), 
+    ...shuffle(NB).slice(0, 5),
+    ...shuffle(TH).slice(0, 2),
+    ...shuffle(VD).slice(0, 3),
   ];
 
   // Xáo trộn đáp án từng câu
@@ -105,10 +103,10 @@ function buildQuiz() {
 }
 
 // --- 4. HÀM GIAO DIỆN (UI) ---
-
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
+  const el = document.getElementById(id);
+  if (el) el.classList.add("active");
 }
 
 function showQuestion() {
@@ -122,7 +120,7 @@ function showQuestion() {
       <div class="options-grid">
         ${q.options.map(opt => `
           <div class="option ${answers[q.id] === opt ? "selected" : ""}"
-               onclick="selectAnswer('${q.id}', '${opt.replace(/'/g, "\\'")}')">
+               onclick="selectAnswer('${q.id}', ${JSON.stringify(opt)})">
             ${opt}
           </div>
         `).join("")}
@@ -156,8 +154,6 @@ window.jumpTo = (i) => {
 };
 
 // --- 5. SỰ KIỆN CÁC NÚT BẤM ---
-
-// Đảm bảo chạy code khi DOM đã sẵn sàng
 document.addEventListener("DOMContentLoaded", () => {
   
   // Nút Bắt đầu
@@ -168,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
       
       buildQuiz();
       
-      // Hiển thị thông tin: Dùng key TEN và LƠP
+      // Hiển thị thông tin học sinh (chỉ tên và lớp)
       document.getElementById("student-info").innerHTML = 
         `Học sinh: <b>${selectedStudent.TEN}</b> - Lớp: ${selectedStudent.LƠP}`;
         
@@ -203,48 +199,55 @@ document.addEventListener("DOMContentLoaded", () => {
   // Nút Nộp bài
   const btnSubmit = document.getElementById("btn-submit");
   if (btnSubmit) {
-    btnSubmit.onclick = () => {
+    btnSubmit.onclick = async () => {
       if (!confirm("Bạn chắc chắn muốn nộp bài? Kết quả sẽ được lưu lại.")) return;
 
-      // Tính điểm
+      // Tính số câu đúng (lưu nội bộ)
       let correctCount = 0;
       quiz.forEach(q => {
+        // giữ nguyên cách so sánh hiện có (ví dụ: đáp án bắt đầu bằng ký tự đúng)
         if (answers[q.id] && answers[q.id].startsWith(q.correct)) {
           correctCount++;
         }
       });
       
       // Tính điểm trên thang 10
-      const score = Math.round((correctCount / quiz.length) * 10); 
+      let score = Math.round((correctCount / quiz.length) * 10);
+
+      // Áp điểm tối thiểu
+      if (score < MIN_SCORE) score = MIN_SCORE;
 
       // Gửi dữ liệu đi (mapping đúng key cho Google Sheet)
       const payload = {
         lop: selectedStudent.LƠP,
         stt: selectedStudent.STT,
         ten: selectedStudent.TEN,
-        score: score,
-        correctCount: correctCount,
+        score: score,               // vẫn gửi cho server
+        correctCount: correctCount, // vẫn gửi cho server
         total: quiz.length,
-        answers: answers
+        answers: answers,
+        timestamp: new Date().toISOString()
       };
 
-      console.log("Đang gửi kết quả...", payload);
+      // Gửi request (no-cors nếu apps script không trả CORS headers)
+      try {
+        await fetch(GOOGLE_API, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        // Nếu no-cors, fetch có thể ném lỗi; tuy nhiên dữ liệu vẫn có thể tới server.
+        console.debug("Lỗi khi gửi (không ảnh hưởng đến UX):", err);
+      }
 
-      // Gửi request
-      fetch(GOOGLE_API, {
-        method: "POST",
-        mode: "no-cors", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }).then(() => {
-        console.log("Gửi thành công!");
-      }).catch(err => console.error("Lỗi gửi:", err));
-
-      // Hiển thị kết quả
-      document.getElementById("result-info").innerHTML = 
-        `Chúc mừng <b>${selectedStudent.TEN}</b><br>` +
-        `Bạn đạt: <h1>${score} điểm</h1>` +
-        `(${correctCount}/${quiz.length} câu đúng)`;
+      // KHÔNG hiển thị điểm hay kết quả cho học sinh.
+      // Chỉ hiển thị thông báo trung tính:
+      const resultBox = document.getElementById("result-info");
+      if (resultBox) {
+        resultBox.innerHTML = `<p><strong>Bài nộp thành công</strong></p>`;
+      }
 
       showScreen("screen-result");
     };
