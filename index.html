@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Web Trắc Nghiệm Hà Huy Tập</title>
+  <title>Web Trắc Nghiệm</title>
   <link rel="stylesheet" href="style.css" />
 
   <style>
@@ -19,16 +19,12 @@
       padding: 20px;
     }
 
-    h2 {
-      margin-bottom: 10px;
-    }
-
     .screen {
       display: none;
       background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     .screen.active {
@@ -40,60 +36,48 @@
       padding: 12px;
       margin: 10px 0;
       font-size: 16px;
+      border-radius: 6px;
     }
 
     button {
       cursor: pointer;
       border: none;
-      border-radius: 6px;
       background: #1e88e5;
       color: white;
       font-weight: bold;
     }
 
-    button:hover {
-      background: #0d6fd4;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    /* Kết quả mới */
     .result-card {
       text-align: center;
-      padding: 30px 20px;
+      padding: 20px;
     }
 
     .result-icon {
       font-size: 60px;
       color: #28a745;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     .result-text {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: bold;
-      color: #333;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
+
   </style>
 </head>
 
 <body>
   <div id="app">
 
-    <!-- MÀN HÌNH CHỌN HỌC SINH -->
+    <!-- MÀN HÌNH CHỌN -->
     <div id="screen-select" class="screen active">
       <h2>🎓 Chọn học sinh để bắt đầu</h2>
 
-      <label>Chọn lớp:</label>
+      <label>Chọn lớp</label>
       <select id="select-class"></select>
 
-      <label>Chọn học sinh:</label>
+      <label>Chọn học sinh</label>
       <select id="select-student"></select>
 
       <button id="btn-start">BẮT ĐẦU LÀM BÀI</button>
@@ -101,14 +85,14 @@
 
     <!-- MÀN HÌNH LÀM BÀI -->
     <div id="screen-quiz" class="screen">
-      <div class="topbar">
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
         <div id="student-info"></div>
-        <button id="btn-submit" class="submit" style="width:auto; padding:10px 20px;">NỘP BÀI</button>
+        <button id="btn-submit" style="width:auto; padding:10px 20px;">NỘP BÀI</button>
       </div>
 
       <div id="question-box"></div>
 
-      <div class="navigator" style="display:flex; justify-content:space-between; margin-top:20px;">
+      <div style="display:flex; justify-content:space-between; margin-top:25px;">
         <button id="btn-prev" style="width:48%;">⬅ Trước</button>
         <button id="btn-next" style="width:48%;">Tiếp ➡</button>
       </div>
@@ -116,11 +100,13 @@
       <div id="overview" style="margin-top:20px;"></div>
     </div>
 
-    <!-- MÀN HÌNH KẾT QUẢ (KHÔNG HIỂN THỊ ĐIỂM) -->
+    <!-- MÀN HÌNH KẾT QUẢ -->
     <div id="screen-result" class="screen">
       <div class="result-card">
         <div class="result-icon">✔</div>
         <div class="result-text">Bài nộp thành công!</div>
+
+        <!-- Đây là nơi app.js ghi thông báo, KHÔNG ghi điểm -->
         <p id="result-info"></p>
 
         <button onclick="location.reload()" style="margin-top:20px;">
