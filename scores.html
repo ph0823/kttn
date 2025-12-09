@@ -4,79 +4,56 @@
   <meta charset="UTF-8">
   <title>Bảng điểm học sinh</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { font-size: 28px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background:#f8f8f8; }
+    h1 { font-size: 26px; }
+
+    select { padding: 8px; font-size: 15px; margin-right: 10px; }
 
     table {
       width: 100%;
       border-collapse: collapse;
+      background: white;
       margin-top: 20px;
-      display: none; /* ẨN bảng khi chưa chọn lớp */
+      display: none;
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 8px;
+      padding: 10px;
       text-align: left;
-      vertical-align: middle;
     }
-    th { background: #f2f2f2; }
 
-    select {
-      padding: 8px;
-      font-size: 16px;
-      margin-left: 10px;
-    }
+    th { background: #eee; user-select:none; cursor:pointer; }
 
     .missing-box {
-      margin-top: 15px;
+      margin-top: 20px;
       padding: 12px;
-      border: 2px dashed #d9534f;
-      background: #fff0f0;
-      display: none; /* Ẩn khi chưa chọn lớp */
+      background:#fff4f4;
+      border-left: 4px solid #d9534f;
+      display:none;
     }
 
-    /* highlight duplicate submissions */
-    tr.duplicate td {
-      background: #ffe6e6; /* sáng đỏ */
+    .duplicate td {
+      background: #ffe9e9;
     }
-
-    .count-badge {
-      display: inline-block;
-      min-width: 26px;
-      padding: 2px 6px;
-      text-align: center;
-      border-radius: 12px;
-      background: #f3f3f3;
-      font-weight: 600;
-    }
-
-    .controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
 
 <h1>Bảng điểm học sinh</h1>
 
-<div class="controls">
-  <label><b>Lọc theo lớp:</b></label>
-  <select id="lop-filter">
-    <option value="">-- Chọn lớp --</option>
-  </select>
+<label><b>Lọc theo lớp:</b></label>
+<select id="lopFilter">
+  <option value="">-- Chọn lớp --</option>
+</select>
 
-  <label style="margin-left:10px;"><b>Sắp xếp theo:</b></label>
-  <select id="sort-filter" disabled>
-    <option value="stt">STT (tăng dần)</option>
-    <option value="score">Điểm (tăng dần)</option>
-  </select>
+<label><b>Sắp xếp theo:</b></label>
+<select id="sortFilter" disabled>
+  <option value="stt">STT (tăng dần)</option>
+  <option value="score">Điểm (tăng dần)</option>
+</select>
 
-  <div style="margin-left:auto; font-size:14px;">
-    <span>Ghi chú: </span>
-    <span style="margin-left:6px;">Dòng màu đỏ = nộp nhiều lần</span>
-  </div>
-</div>
-
-<table id="scoreTable" aria-label="Bảng điểm">
+<table id="scoreTable">
   <thead>
     <tr>
       <th>STT</th>
@@ -90,113 +67,92 @@
   <tbody></tbody>
 </table>
 
-<div id="missingStudents" class="missing-box" aria-live="polite">
+<div id="missingBox" class="missing-box">
   <h3>Danh sách học sinh chưa làm bài</h3>
   <ul id="missingList"></ul>
 </div>
 
 <script>
-/*
-  LƯU Ý: thay API_URL bằng link Web App doGet của bạn
-  Ví dụ: https://script.google.com/macros/s/AKfycb.../exec
-*/
 const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
+const STUDENT_URL = "./data/students.json";
 
-let allData = [];         // toàn bộ bản ghi từ sheet
-let duplicateMap = {};    // key = lop + '|' + stt -> count
+let allScores = [];
+let allStudents = [];
+let duplicateMap = {};
 
-// ------------------------------
-// 1) Tải dữ liệu từ API
-// ------------------------------
-fetch(API_URL)
-  .then(res => res.json())
-  .then(result => {
-    // hỗ trợ API trả {data:[...]} hoặc [...]
-    const data = result.data || result;
-
-    // Chuẩn hoá kiểu dữ liệu, giữ timestamp nguyên dạng string nếu có
-    allData = data.map(item => ({
-      ...item,
-      stt: Number(item.stt) || 0,
-      score: (item.score === '' || item.score === null || item.score === undefined) ? null : Number(item.score),
-      timestamp: item.timestamp || item.time || item.Thời_gian || item.Thoi_gian || "" // nhiều tên header khác nhau
+async function loadAll() {
+  try {
+    const scoreRes = await fetch(API_URL);
+    const raw = await scoreRes.json();
+    allScores = (raw.data || raw).map(r => ({
+      stt: Number(r.stt),
+      ten: r.ten,
+      lop: r.lop,
+      score: r.score === "" ? null : Number(r.score),
+      timestamp: r.timestamp || r.time || ""
     }));
 
-    // Tính bản đồ duplicates trên toàn bộ dữ liệu
-    buildDuplicateMap(allData);
+    // tải danh sách học sinh chính thức
+    const stuRes = await fetch(STUDENT_URL);
+    allStudents = await stuRes.json();
 
-    // Tạo list lớp (unique)
-    loadClassList(allData);
-  })
-  .catch(err => {
-    console.error("Lỗi tải dữ liệu:", err);
-    alert("Không tải được dữ liệu từ Google Sheet. Kiểm tra API_URL và quyền truy cập.");
-  });
+    buildDuplicateMap();
+    loadClassList();
+  } catch (e) {
+    console.error(e);
+    alert("Không thể tải dữ liệu!");
+  }
+}
 
-// ------------------------------
-// Build duplicate map: count submissions per (lop,stt)
-// ------------------------------
-function buildDuplicateMap(data) {
+function buildDuplicateMap() {
   duplicateMap = {};
-  data.forEach(row => {
-    const key = `${String(row.lop)}|${row.stt}`;
+  allScores.forEach(r => {
+    const key = `${r.lop}|${r.stt}`;
     duplicateMap[key] = (duplicateMap[key] || 0) + 1;
   });
 }
 
-// ------------------------------
-// 2) Tạo danh sách lớp
-// ------------------------------
-function loadClassList(data) {
-  const select = document.getElementById("lop-filter");
-  // lấy unique lớp, loại bỏ giá trị rỗng, sắp xếp
-  const uniqueClasses = [...new Set(data.map(d => String(d.lop).trim()).filter(Boolean))].sort();
+function loadClassList() {
+  const select = document.getElementById("lopFilter");
+  const classes = [...new Set(allScores.map(x => x.lop))].sort();
 
-  uniqueClasses.forEach(lop => {
+  classes.forEach(c => {
     const op = document.createElement("option");
-    op.value = lop;
-    op.textContent = lop;
+    op.value = c;
+    op.textContent = c;
     select.appendChild(op);
   });
 
-  // only when user chooses
   select.onchange = applyFilters;
-  document.getElementById("sort-filter").onchange = applyFilters;
+  document.getElementById("sortFilter").onchange = applyFilters;
 }
 
-// ------------------------------
-// 3) Áp dụng lọc + sắp xếp
-// ------------------------------
 function applyFilters() {
-  const lop = document.getElementById("lop-filter").value;
-  const sort = document.getElementById("sort-filter").value;
-  const table = document.getElementById("scoreTable");
-  const missingBox = document.getElementById("missingStudents");
+  const lop = document.getElementById("lopFilter").value;
+  const sort = document.getElementById("sortFilter").value;
 
-  // nếu chưa chọn lớp -> ẩn toàn bộ
+  const table = document.getElementById("scoreTable");
+  const missingBox = document.getElementById("missingBox");
+
   if (!lop) {
     table.style.display = "none";
     missingBox.style.display = "none";
-    document.getElementById("sort-filter").disabled = true;
+    document.getElementById("sortFilter").disabled = true;
     return;
   }
 
-  document.getElementById("sort-filter").disabled = false;
+  document.getElementById("sortFilter").disabled = false;
   table.style.display = "table";
 
-  // Lọc theo lớp
-  let filtered = allData.filter(r => String(r.lop).trim() === lop);
+  let filtered = allScores.filter(x => x.lop === lop);
 
-  // Sắp xếp theo lựa chọn
-  if (sort === "stt" || !sort) {
-    filtered.sort((a, b) => (a.stt || 0) - (b.stt || 0));
+  if (sort === "stt") {
+    filtered.sort((a, b) => a.stt - b.stt);
   } else if (sort === "score") {
-    // score null đặt cuối
     filtered.sort((a, b) => {
-      const sa = (a.score === null || a.score === undefined) ? Infinity : a.score;
-      const sb = (b.score === null || b.score === undefined) ? Infinity : b.score;
-      if (sa === sb) return (a.stt || 0) - (b.stt || 0);
-      return sa - sb;
+      const sa = a.score ?? Infinity;
+      const sb = b.score ?? Infinity;
+      return sa - sb || a.stt - b.stt;
     });
   }
 
@@ -204,77 +160,54 @@ function applyFilters() {
   detectMissingStudents(filtered, lop);
 }
 
-// ------------------------------
-// 4) Render table + tô đỏ duplicates + show count
-// ------------------------------
 function renderTable(data) {
   const tbody = document.querySelector("#scoreTable tbody");
   tbody.innerHTML = "";
 
-  data.forEach(row => {
-    const key = `${String(row.lop)}|${row.stt}`;
-    const times = duplicateMap[key] || 1;
+  data.forEach(r => {
     const tr = document.createElement("tr");
+    const key = `${r.lop}|${r.stt}`;
+    const times = duplicateMap[key] || 1;
+
     if (times > 1) tr.classList.add("duplicate");
 
-    // Hiển thị timestamp nếu có, ngược lại empty string
-    const ts = row.timestamp || "";
-
     tr.innerHTML = `
-      <td>${row.stt}</td>
-      <td>${escapeHtml(row.ten || "")}</td>
-      <td>${escapeHtml(row.lop || "")}</td>
-      <td>${row.score === null ? "" : row.score}</td>
-      <td>${escapeHtml(ts)}</td>
-      <td><span class="count-badge">${times}</span></td>
+      <td>${r.stt}</td>
+      <td>${r.ten}</td>
+      <td>${r.lop}</td>
+      <td>${r.score ?? ""}</td>
+      <td>${r.timestamp}</td>
+      <td>${times}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// ------------------------------
-// 5) Tìm học sinh chưa làm bài (dựa trên STT trong lớp)
-//    Lưu ý: để chính xác, cần có danh sách tổng STT chuẩn của lớp.
-//    Ở đây ta dùng max STT xuất hiện trong dữ liệu đã nộp như ước lượng.
-// ------------------------------
-function detectMissingStudents(filteredData, lop) {
-  const box = document.getElementById("missingStudents");
+function detectMissingStudents(scoreData, lop) {
+  const missingBox = document.getElementById("missingBox");
   const list = document.getElementById("missingList");
   list.innerHTML = "";
-  box.style.display = "none";
 
-  // Nếu không có dữ liệu nộp nào -> không hiện
-  if (!filteredData.length) return;
+  const classStudents = allStudents.filter(s => String(s["LƠP"]).trim() === lop);
 
-  // Khởi tạo: ta cần biết tổng số học sinh lý thuyết của lớp.
-  // Nếu sheet gốc có danh sách học sinh, nên lấy từ đó.
-  // Tạm thời ước lượng bằng max STT trong filteredData hoặc dùng globalAllMax if exists.
-  const maxSTT = Math.max(...filteredData.map(x => x.stt || 0));
+  const submitted = new Set(scoreData.map(s => s.stt));
+  const missing = classStudents.filter(s => !submitted.has(Number(s.STT)));
 
-  const existing = new Set(filteredData.map(x => x.stt));
-  const missing = [];
-  for (let i = 1; i <= maxSTT; i++) {
-    if (!existing.has(i)) missing.push(i);
+  if (missing.length === 0) {
+    missingBox.style.display = "none";
+    return;
   }
 
-  if (missing.length === 0) return;
+  missingBox.style.display = "block";
 
-  box.style.display = "block";
-  missing.forEach(m => {
+  missing.forEach(s => {
     const li = document.createElement("li");
-    li.textContent = "STT " + m;
+    li.textContent = `STT ${s.STT} — ${s.TEN}`;
     list.appendChild(li);
   });
 }
 
-// ------------------------------
-// escape HTML
-// ------------------------------
-function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
-}
+loadAll();
 </script>
 
 </body>
