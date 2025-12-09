@@ -1,5 +1,5 @@
 /**
- * APP.JS - Phiên bản chuẩn – Ẩn điểm, chọn đáp án mượt
+ * APP.JS - Phiên bản chuẩn – ĐÃ SỬA LỖI KHÔNG CHỌN ĐƯỢC ĐÁP ÁN
  */
 
 let students = [];
@@ -9,7 +9,7 @@ let answers = {};
 let currentIndex = 0;
 let selectedStudent = null;
 
-const MIN_SCORE = 5; 
+const MIN_SCORE = 5;
 const GOOGLE_API = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
 
@@ -21,6 +21,12 @@ async function loadData() {
 
     const questionRes = await fetch("data/questions.json");
     questions = await questionRes.json();
+
+    // 🟢 Tạo id cho từng câu nếu không có
+    questions = questions.map((q, i) => ({
+      ...q,
+      id: q.id || "Q" + (i + 1)
+    }));
 
     loadClasses();
   } catch (err) {
