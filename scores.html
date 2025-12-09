@@ -4,97 +4,181 @@
   <meta charset="UTF-8">
   <title>Bảng điểm học sinh</title>
   <style>
-    body { font-family: Arial; padding: 20px; max-width: 900px; margin: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background: #f4f4f4; cursor: pointer; }
-    select { padding: 5px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { font-size: 28px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th { background: #f2f2f2; cursor: pointer; }
+
+    select {
+      padding: 8px;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+
+    .missing-box {
+      margin-top: 25px;
+      padding: 15px;
+      border: 2px dashed red;
+      background: #ffecec;
+    }
   </style>
 </head>
 <body>
 
-<h2>Bảng điểm học sinh</h2>
+<h1>Bảng điểm học sinh</h1>
 
-<label>Chọn lớp:</label>
-<select id="lopSelect"></select>
+<label><b>Lọc theo lớp:</b></label>
+<select id="lop-filter">
+  <option value="all">Tất cả</option>
+</select>
 
-<button onclick="sortBySTT()">Sắp xếp STT ↑</button>
-<button onclick="sortByScore()">Sắp xếp điểm ↓</button>
-<button onclick="resetData()">Reset</button>
+<label style="margin-left:20px;"><b>Sắp xếp theo:</b></label>
+<select id="sort-filter">
+  <option value="stt">STT (tăng dần)</option>
+  <option value="score">Điểm (tăng dần)</option>
+</select>
 
 <table id="scoreTable">
   <thead>
     <tr>
       <th>STT</th>
-      <th>Tên</th>
+      <th>Tên học sinh</th>
       <th>Lớp</th>
       <th>Điểm</th>
-      <th>Số đúng</th>
-      <th>Tổng</th>
-      <th>Thời gian</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
+<div id="missingStudents" class="missing-box" style="display:none;">
+  <h3>Danh sách học sinh chưa làm bài</h3>
+  <ul id="missingList"></ul>
+</div>
+
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";  // <--- dán link web app Google Apps Script
+const API_URL = "YOUR_WEB_APP_URL_HERE";
 
-let originalData = [];
-let currentData = [];
+let allData = [];
 
-window.onload = () => {
-  fetch(API_URL)
-    .then(res => res.json())
-    .then(data => {
-      originalData = data;
-      currentData = [...data];
-      loadClasses(data);
-      renderTable(data);
-    });
-};
+// ----------------------------------------------------
+// 1) Tải dữ liệu từ Google Apps Script
+// ----------------------------------------------------
+fetch(API_URL)
+  .then(response => response.json())
+  .then(data => {
+    allData = data;
+    loadClassList(data);
+    renderTable(data);
+  })
+  .catch(err => console.error("Lỗi tải dữ liệu:", err));
 
-function loadClasses(data) {
-  const select = document.getElementById("lopSelect");
-  const classes = [...new Set(data.map(item => item.lop))];
-  select.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join("");
 
-  select.onchange = () => {
-    const lop = select.value;
-    const filtered = originalData.filter(item => item.lop == lop);
-    currentData = [...filtered];
-    renderTable(filtered);
-  };
+// ----------------------------------------------------
+// 2) Tạo danh sách lớp
+// ----------------------------------------------------
+function loadClassList(data) {
+  const select = document.getElementById("lop-filter");
+
+  const uniqueClasses = [...new Set(data.map(item => item.lop.toString()))];
+  uniqueClasses.forEach(lop => {
+    const option = document.createElement("option");
+    option.value = lop;
+    option.textContent = lop;
+    select.appendChild(option);
+  });
+
+  select.addEventListener("change", applyFilters);
+  document.getElementById("sort-filter").addEventListener("change", applyFilters);
 }
 
+
+// ----------------------------------------------------
+// 3) Áp dụng bộ lọc & sắp xếp
+// ----------------------------------------------------
+function applyFilters() {
+  const lop = document.getElementById("lop-filter").value;
+  const sortType = document.getElementById("sort-filter").value;
+
+  let filtered = [...allData];
+
+  if (lop !== "all") {
+    filtered = filtered.filter(item => item.lop.toString() === lop);
+  }
+
+  if (sortType === "stt") {
+    filtered.sort((a, b) => Number(a.stt) - Number(b.stt));
+  } else if (sortType === "score") {
+    filtered.sort((a, b) => Number(a.score) - Number(b.score));
+  }
+
+  renderTable(filtered);
+  detectMissingStudents(filtered);
+}
+
+
+// ----------------------------------------------------
+// 4) Hiển thị bảng điểm
+// ----------------------------------------------------
 function renderTable(data) {
   const tbody = document.querySelector("#scoreTable tbody");
-  tbody.innerHTML = data.map(row => `
-    <tr>
-      <td>${row.stt}</td>
-      <td>${row.ten}</td>
-      <td>${row.lop}</td>
-      <td>${row.score}</td>
-      <td>${row.correctCount}</td>
-      <td>${row.total}</td>
-      <td>${row.timestamp}</td>
-    </tr>`
-  ).join("");
+  tbody.innerHTML = "";
+
+  data.forEach(item => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${item.stt}</td>
+      <td>${item.ten}</td>
+      <td>${item.lop}</td>
+      <td>${item.score}</td>
+    `;
+    tbody.appendChild(row);
+  });
 }
 
-function sortBySTT() {
-  currentData.sort((a, b) => a.stt - b.stt);
-  renderTable(currentData);
-}
 
-function sortByScore() {
-  currentData.sort((a, b) => b.score - a.score);
-  renderTable(currentData);
-}
+// ----------------------------------------------------
+// 5) Tìm học sinh chưa làm bài
+//   → STT bị thiếu trong danh sách
+// ----------------------------------------------------
+function detectMissingStudents(data) {
+  const list = document.getElementById("missingList");
+  list.innerHTML = "";
 
-function resetData() {
-  currentData = [...originalData];
-  renderTable(currentData);
+  if (data.length === 0) {
+    document.getElementById("missingStudents").style.display = "none";
+    return;
+  }
+
+  const totalStudents = Math.max(...data.map(i => Number(i.stt)));
+  const existing = new Set(data.map(i => Number(i.stt)));
+
+  let missing = [];
+  for (let i = 1; i <= totalStudents; i++) {
+    if (!existing.has(i)) missing.push(i);
+  }
+
+  if (missing.length === 0) {
+    document.getElementById("missingStudents").style.display = "none";
+    return;
+  }
+
+  document.getElementById("missingStudents").style.display = "block";
+  missing.forEach(stt => {
+    const li = document.createElement("li");
+    li.textContent = "STT " + stt;
+    list.appendChild(li);
+  });
 }
 </script>
 
