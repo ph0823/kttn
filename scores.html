@@ -16,8 +16,9 @@
 
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 8px;
       text-align: left;
+      vertical-align: middle;
     }
     th { background: #f2f2f2; }
 
@@ -28,78 +29,129 @@
     }
 
     .missing-box {
-      margin-top: 25px;
-      padding: 15px;
-      border: 2px dashed red;
-      background: #ffecec;
+      margin-top: 15px;
+      padding: 12px;
+      border: 2px dashed #d9534f;
+      background: #fff0f0;
       display: none; /* Ẩn khi chưa chọn lớp */
     }
+
+    /* highlight duplicate submissions */
+    tr.duplicate td {
+      background: #ffe6e6; /* sáng đỏ */
+    }
+
+    .count-badge {
+      display: inline-block;
+      min-width: 26px;
+      padding: 2px 6px;
+      text-align: center;
+      border-radius: 12px;
+      background: #f3f3f3;
+      font-weight: 600;
+    }
+
+    .controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
 
 <h1>Bảng điểm học sinh</h1>
 
-<label><b>Lọc theo lớp:</b></label>
-<select id="lop-filter">
-  <option value="">-- Chọn lớp --</option>
-</select>
+<div class="controls">
+  <label><b>Lọc theo lớp:</b></label>
+  <select id="lop-filter">
+    <option value="">-- Chọn lớp --</option>
+  </select>
 
-<label style="margin-left:20px;"><b>Sắp xếp theo:</b></label>
-<select id="sort-filter" disabled>
-  <option value="stt">STT (tăng dần)</option>
-  <option value="score">Điểm (tăng dần)</option>
-</select>
+  <label style="margin-left:10px;"><b>Sắp xếp theo:</b></label>
+  <select id="sort-filter" disabled>
+    <option value="stt">STT (tăng dần)</option>
+    <option value="score">Điểm (tăng dần)</option>
+  </select>
 
-<table id="scoreTable">
+  <div style="margin-left:auto; font-size:14px;">
+    <span>Ghi chú: </span>
+    <span style="margin-left:6px;">Dòng màu đỏ = nộp nhiều lần</span>
+  </div>
+</div>
+
+<table id="scoreTable" aria-label="Bảng điểm">
   <thead>
     <tr>
       <th>STT</th>
       <th>Tên học sinh</th>
       <th>Lớp</th>
       <th>Điểm</th>
+      <th>Thời gian</th>
+      <th>Số lần</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<div id="missingStudents" class="missing-box">
+<div id="missingStudents" class="missing-box" aria-live="polite">
   <h3>Danh sách học sinh chưa làm bài</h3>
   <ul id="missingList"></ul>
 </div>
 
 <script>
+/*
+  LƯU Ý: thay API_URL bằng link Web App doGet của bạn
+  Ví dụ: https://script.google.com/macros/s/AKfycb.../exec
+*/
 const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
-let allData = [];
+let allData = [];         // toàn bộ bản ghi từ sheet
+let duplicateMap = {};    // key = lop + '|' + stt -> count
 
-// ----------------------------------------------------
-// 1) Tải dữ liệu
-// ----------------------------------------------------
+// ------------------------------
+// 1) Tải dữ liệu từ API
+// ------------------------------
 fetch(API_URL)
   .then(res => res.json())
   .then(result => {
-    // Cho phép API trả về {data:[...]} hoặc [...]
+    // hỗ trợ API trả {data:[...]} hoặc [...]
     const data = result.data || result;
 
+    // Chuẩn hoá kiểu dữ liệu, giữ timestamp nguyên dạng string nếu có
     allData = data.map(item => ({
       ...item,
-      stt: Number(item.stt),
-      score: Number(item.score)
+      stt: Number(item.stt) || 0,
+      score: (item.score === '' || item.score === null || item.score === undefined) ? null : Number(item.score),
+      timestamp: item.timestamp || item.time || item.Thời_gian || item.Thoi_gian || "" // nhiều tên header khác nhau
     }));
 
+    // Tính bản đồ duplicates trên toàn bộ dữ liệu
+    buildDuplicateMap(allData);
+
+    // Tạo list lớp (unique)
     loadClassList(allData);
   })
-  .catch(err => console.error("Lỗi tải dữ liệu:", err));
+  .catch(err => {
+    console.error("Lỗi tải dữ liệu:", err);
+    alert("Không tải được dữ liệu từ Google Sheet. Kiểm tra API_URL và quyền truy cập.");
+  });
 
+// ------------------------------
+// Build duplicate map: count submissions per (lop,stt)
+// ------------------------------
+function buildDuplicateMap(data) {
+  duplicateMap = {};
+  data.forEach(row => {
+    const key = `${String(row.lop)}|${row.stt}`;
+    duplicateMap[key] = (duplicateMap[key] || 0) + 1;
+  });
+}
 
-// ----------------------------------------------------
-// 2) Danh sách lớp
-// ----------------------------------------------------
+// ------------------------------
+// 2) Tạo danh sách lớp
+// ------------------------------
 function loadClassList(data) {
   const select = document.getElementById("lop-filter");
+  // lấy unique lớp, loại bỏ giá trị rỗng, sắp xếp
+  const uniqueClasses = [...new Set(data.map(d => String(d.lop).trim()).filter(Boolean))].sort();
 
-  const uniqueClasses = [...new Set(data.map(d => d.lop.toString()))];
   uniqueClasses.forEach(lop => {
     const op = document.createElement("option");
     op.value = lop;
@@ -107,94 +159,121 @@ function loadClassList(data) {
     select.appendChild(op);
   });
 
-  // Chỉ chạy khi chọn lớp
+  // only when user chooses
   select.onchange = applyFilters;
-
   document.getElementById("sort-filter").onchange = applyFilters;
 }
 
-
-// ----------------------------------------------------
-// 3) Áp dụng bộ lọc + sắp xếp
-// ----------------------------------------------------
+// ------------------------------
+// 3) Áp dụng lọc + sắp xếp
+// ------------------------------
 function applyFilters() {
   const lop = document.getElementById("lop-filter").value;
   const sort = document.getElementById("sort-filter").value;
-
   const table = document.getElementById("scoreTable");
   const missingBox = document.getElementById("missingStudents");
 
-  // Nếu CHƯA chọn lớp → ẨN mọi thứ
-  if (lop === "") {
+  // nếu chưa chọn lớp -> ẩn toàn bộ
+  if (!lop) {
     table.style.display = "none";
     missingBox.style.display = "none";
     document.getElementById("sort-filter").disabled = true;
     return;
   }
 
-  // Khi đã chọn lớp → mở khóa sort + hiển thị bảng
   document.getElementById("sort-filter").disabled = false;
   table.style.display = "table";
 
-  let filtered = allData.filter(d => d.lop.toString() === lop);
+  // Lọc theo lớp
+  let filtered = allData.filter(r => String(r.lop).trim() === lop);
 
-  // Sắp xếp
-  if (sort === "stt") filtered.sort((a, b) => a.stt - b.stt);
-  else if (sort === "score") filtered.sort((a, b) => a.score - b.score);
+  // Sắp xếp theo lựa chọn
+  if (sort === "stt" || !sort) {
+    filtered.sort((a, b) => (a.stt || 0) - (b.stt || 0));
+  } else if (sort === "score") {
+    // score null đặt cuối
+    filtered.sort((a, b) => {
+      const sa = (a.score === null || a.score === undefined) ? Infinity : a.score;
+      const sb = (b.score === null || b.score === undefined) ? Infinity : b.score;
+      if (sa === sb) return (a.stt || 0) - (b.stt || 0);
+      return sa - sb;
+    });
+  }
 
   renderTable(filtered);
-  detectMissingStudents(filtered);
+  detectMissingStudents(filtered, lop);
 }
 
-
-// ----------------------------------------------------
-// 4) Hiển thị bảng
-// ----------------------------------------------------
+// ------------------------------
+// 4) Render table + tô đỏ duplicates + show count
+// ------------------------------
 function renderTable(data) {
   const tbody = document.querySelector("#scoreTable tbody");
   tbody.innerHTML = "";
 
-  data.forEach(item => {
+  data.forEach(row => {
+    const key = `${String(row.lop)}|${row.stt}`;
+    const times = duplicateMap[key] || 1;
     const tr = document.createElement("tr");
+    if (times > 1) tr.classList.add("duplicate");
+
+    // Hiển thị timestamp nếu có, ngược lại empty string
+    const ts = row.timestamp || "";
+
     tr.innerHTML = `
-      <td>${item.stt}</td>
-      <td>${item.ten}</td>
-      <td>${item.lop}</td>
-      <td>${item.score}</td>
+      <td>${row.stt}</td>
+      <td>${escapeHtml(row.ten || "")}</td>
+      <td>${escapeHtml(row.lop || "")}</td>
+      <td>${row.score === null ? "" : row.score}</td>
+      <td>${escapeHtml(ts)}</td>
+      <td><span class="count-badge">${times}</span></td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-
-// ----------------------------------------------------
-// 5) Danh sách chưa làm bài
-// ----------------------------------------------------
-function detectMissingStudents(data) {
+// ------------------------------
+// 5) Tìm học sinh chưa làm bài (dựa trên STT trong lớp)
+//    Lưu ý: để chính xác, cần có danh sách tổng STT chuẩn của lớp.
+//    Ở đây ta dùng max STT xuất hiện trong dữ liệu đã nộp như ước lượng.
+// ------------------------------
+function detectMissingStudents(filteredData, lop) {
   const box = document.getElementById("missingStudents");
   const list = document.getElementById("missingList");
-
   list.innerHTML = "";
   box.style.display = "none";
 
-  if (data.length === 0) return;
+  // Nếu không có dữ liệu nộp nào -> không hiện
+  if (!filteredData.length) return;
 
-  const maxSTT = Math.max(...data.map(i => i.stt));
-  const existed = new Set(data.map(i => i.stt));
+  // Khởi tạo: ta cần biết tổng số học sinh lý thuyết của lớp.
+  // Nếu sheet gốc có danh sách học sinh, nên lấy từ đó.
+  // Tạm thời ước lượng bằng max STT trong filteredData hoặc dùng globalAllMax if exists.
+  const maxSTT = Math.max(...filteredData.map(x => x.stt || 0));
 
+  const existing = new Set(filteredData.map(x => x.stt));
   const missing = [];
   for (let i = 1; i <= maxSTT; i++) {
-    if (!existed.has(i)) missing.push(i);
+    if (!existing.has(i)) missing.push(i);
   }
 
   if (missing.length === 0) return;
 
   box.style.display = "block";
-  missing.forEach(stt => {
+  missing.forEach(m => {
     const li = document.createElement("li");
-    li.textContent = "STT " + stt;
+    li.textContent = "STT " + m;
     list.appendChild(li);
   });
+}
+
+// ------------------------------
+// escape HTML
+// ------------------------------
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
 }
 </script>
 
