@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>Bảng điểm học sinh</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background:#f8f8f8; }
+    h2 { margin-bottom: 10px; }
+    select { padding:6px; margin-bottom:15px; }
+    table { border-collapse: collapse; width: 100%; background:white; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align:left; }
+    th { background:#eee; cursor: pointer; user-select:none; }
+    tr:hover { background:#f2f2f2; }
+  </style>
+</head>
+<body>
+  <h2>Bảng điểm học sinh</h2>
+
+  <label><b>Lọc theo lớp:</b> 
+    <select id="classFilter">
+      <option value="">Tất cả</option>
+    </select>
+  </label>
+
+  <br><br>
+
+  <table id="scoreTable">
+    <thead>
+      <tr>
+        <th data-key="stt">STT</th>
+        <th data-key="ten">Tên học sinh</th>
+        <th data-key="lop">Lớp</th>
+        <th data-key="score">Điểm</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+<script>
+// URL API: thay bằng URL Web App của bạn (Apps Script doGet)
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
+
+let fullData = [];
+
+async function loadData() {
+  try {
+    const res = await fetch(SHEET_URL);
+    const rows = await res.json();
+
+    // Chuẩn hóa JSON để dùng
+    fullData = rows.map(r => ({
+      stt: Number(r.stt),
+      ten: r.ten,
+      lop: r.lop,
+      score: Number(r.score)
+    }));
+
+    loadClassFilter();
+    renderTable(fullData);
+  } catch (err) {
+    alert("Không thể tải dữ liệu từ Google Sheet. Kiểm tra URL Web App!");
+    console.error(err);
+  }
+}
+
+function loadClassFilter() {
+  const select = document.getElementById("classFilter");
+  const classes = [...new Set(fullData.map(x => x.lop))].sort();
+
+  classes.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    select.appendChild(opt);
+  });
+
+  select.onchange = () => {
+    const val = select.value;
+    const filtered = val ? fullData.filter(x => x.lop === val) : fullData;
+    renderTable(filtered);
+  };
+}
+
+function renderTable(data) {
+  const tbody = document.querySelector("#scoreTable tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.stt}</td>
+      <td>${row.ten}</td>
+      <td>${row.lop}</td>
+      <td>${row.score}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Sắp xếp cột
+const ths = document.querySelectorAll("#scoreTable th");
+ths.forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    const asc = th.asc = !th.asc;
+
+    const sorted = [...fullData].sort((a, b) => {
+      if (a[key] < b[key]) return asc ? -1 : 1;
+      if (a[key] > b[key]) return asc ? 1 : -1;
+      return 0;
+    });
+
+    renderTable(sorted);
+  });
+});
+
+loadData();
+</script>
+</body>
+</html>
