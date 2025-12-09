@@ -2,8 +2,85 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Web Trắc Nghiệm</title>
+  <title>Web Trắc Nghiệm Hà Huy Tập</title>
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    #app {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .screen {
+      display: none;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: #1e88e5;
+      color: white;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #0d6fd4;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    /* Kết quả mới */
+    .result-card {
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .result-icon {
+      font-size: 60px;
+      color: #28a745;
+      margin-bottom: 10px;
+    }
+
+    .result-text {
+      font-size: 22px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 
 <body>
@@ -26,24 +103,30 @@
     <div id="screen-quiz" class="screen">
       <div class="topbar">
         <div id="student-info"></div>
-        <button id="btn-submit" class="submit">NỘP BÀI</button>
+        <button id="btn-submit" class="submit" style="width:auto; padding:10px 20px;">NỘP BÀI</button>
       </div>
 
       <div id="question-box"></div>
 
-      <div class="navigator">
-        <button id="btn-prev">⬅ Trước</button>
-        <button id="btn-next">Tiếp ➡</button>
+      <div class="navigator" style="display:flex; justify-content:space-between; margin-top:20px;">
+        <button id="btn-prev" style="width:48%;">⬅ Trước</button>
+        <button id="btn-next" style="width:48%;">Tiếp ➡</button>
       </div>
 
-      <div id="overview"></div>
+      <div id="overview" style="margin-top:20px;"></div>
     </div>
 
-    <!-- MÀN HÌNH THÔNG BÁO -->
+    <!-- MÀN HÌNH KẾT QUẢ (KHÔNG HIỂN THỊ ĐIỂM) -->
     <div id="screen-result" class="screen">
-      <h2>Thông báo</h2>
-      <p id="result-info" style="font-size:20px; color:#0a7; font-weight:bold;"></p>
-      <button onclick="location.reload()">Làm lại từ đầu</button>
+      <div class="result-card">
+        <div class="result-icon">✔</div>
+        <div class="result-text">Bài nộp thành công!</div>
+        <p id="result-info"></p>
+
+        <button onclick="location.reload()" style="margin-top:20px;">
+          Làm lại từ đầu
+        </button>
+      </div>
     </div>
 
   </div>
