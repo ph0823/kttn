@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 // ==========================
 // CONFIG API URL
 // ==========================
-const GOOGLE_API = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
+const GOOGLE_API =
+  "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
 export default function App() {
   const [students, setStudents] = useState([]);
@@ -15,49 +16,48 @@ export default function App() {
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
-  // Load students + questions
+  // ======================================
+  // Load students + questions (VITE + GITHUB PAGES compatible)
+  // ======================================
   useEffect(() => {
-    fetch("/data/students.json")
-      .then(res => res.json())
-      .then(data => setStudents(data));
+    const base = import.meta.env.BASE_URL; // "/kttn/" khi deploy GitHub Pages
 
-    fetch("/data/questions.json")
-      .then(res => res.json())
-      .then(data => setQuestions(data));
+    fetch(`${base}data/students.json`)
+      .then((res) => res.json())
+      .then((data) => setStudents(data));
+
+    fetch(`${base}data/questions.json`)
+      .then((res) => res.json())
+      .then((data) => setQuestions(data));
   }, []);
 
-  // Khi chọn lớp → lọc học sinh
+  // Khi chọn lớp: lọc học sinh
   useEffect(() => {
     if (selectedClass) {
-      setFilteredStudents(
-        students.filter(s => s.Lop === selectedClass)
-      );
+      setFilteredStudents(students.filter((s) => s.Lop === selectedClass));
     }
   }, [selectedClass, students]);
 
-  // ==========================
   // Shuffle utility
-  // ==========================
-  function shuffle(array) {
-    return [...array].sort(() => Math.random() - 0.5);
+  function shuffle(arr) {
+    return [...arr].sort(() => Math.random() - 0.5);
   }
 
-  // ==========================
-  // Lấy 20 câu theo độ khó NB–TH–VD
-  // ==========================
+  // Lấy 20 câu theo NB – TH – VD
   function pick20Questions() {
-    const NB = questions.filter(q => q.level === "NB");
-    const TH = questions.filter(q => q.level === "TH");
-    const VD = questions.filter(q => q.level === "VD");
+    const NB = questions.filter((q) => q.level === "NB");
+    const TH = questions.filter((q) => q.level === "TH");
+    const VD = questions.filter((q) => q.level === "VD");
 
     const pickNB = shuffle(NB).slice(0, 8);
     const pickTH = shuffle(TH).slice(0, 7);
     const pickVD = shuffle(VD).slice(0, 5);
 
     let final = [...pickNB, ...pickTH, ...pickVD];
-    final = shuffle(final).map(q => ({
+
+    final = shuffle(final).map((q) => ({
       ...q,
-      options: shuffle(q.options) // trộn đáp án
+      options: shuffle(q.options),
     }));
 
     setQuiz(final);
@@ -69,26 +69,21 @@ export default function App() {
     pick20Questions();
   }
 
-  // ==========================
-  // Khi HS chọn đáp án
-  // ==========================
+  // Chọn đáp án
   function chooseAnswer(qid, opt) {
     if (submitted) return;
-    setAnswers(prev => ({ ...prev, [qid]: opt }));
+    setAnswers((prev) => ({ ...prev, [qid]: opt }));
   }
 
-  // ==========================
   // Nộp bài
-  // ==========================
   function submitQuiz() {
     if (Object.keys(answers).length < 20)
-      if (!window.confirm("Bạn chưa trả lời hết. Nộp luôn?"))
-        return;
+      if (!window.confirm("Bạn chưa trả lời hết. Nộp luôn?")) return;
 
     setSubmitted(true);
 
     const correctCount = quiz.filter(
-      q => answers[q.id] && answers[q.id].startsWith(q.correct)
+      (q) => answers[q.id] && answers[q.id].startsWith(q.correct)
     ).length;
 
     const result = {
@@ -98,22 +93,20 @@ export default function App() {
       score: Math.round((correctCount / quiz.length) * 10),
       correctCount,
       total: quiz.length,
-      details: answers
+      details: answers,
     };
 
     sendToGoogle(result);
   }
 
-  // ==========================
   // Gửi kết quả lên Google Sheet
-  // ==========================
   async function sendToGoogle(payload) {
     try {
       await fetch(GOOGLE_API, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       console.log("Đã gửi kết quả lên Google Sheet");
     } catch (err) {
@@ -136,7 +129,7 @@ export default function App() {
             onChange={(e) => setSelectedClass(e.target.value)}
           >
             <option value="">-- Chọn lớp --</option>
-            {[...new Set(students.map(s => s.Lop))].map(l => (
+            {[...new Set(students.map((s) => s.Lop))].map((l) => (
               <option key={l}>{l}</option>
             ))}
           </select>
@@ -148,13 +141,13 @@ export default function App() {
             <select
               onChange={(e) => {
                 const st = filteredStudents.find(
-                  s => String(s.STT) === String(e.target.value)
+                  (s) => String(s.STT) === String(e.target.value)
                 );
                 setSelectedStudent(st);
               }}
             >
               <option value="">-- Chọn STT --</option>
-              {filteredStudents.map(s => (
+              {filteredStudents.map((s) => (
                 <option key={s.STT} value={s.STT}>
                   {s.STT} - {s.Ten}
                 </option>
@@ -185,7 +178,7 @@ export default function App() {
 
       {quiz.map((q, index) => {
         const selected = answers[q.id];
-        const correctOpt = q.options.find(o => o.startsWith(q.correct));
+        const correctOpt = q.options.find((o) => o.startsWith(q.correct));
 
         return (
           <div key={q.id} style={{ marginBottom: 20 }}>
@@ -193,12 +186,10 @@ export default function App() {
               <b>Câu {index + 1}:</b> {q.q}
             </div>
 
-            {q.options.map(opt => {
+            {q.options.map((opt) => {
               const isCorrect = submitted && opt.startsWith(q.correct);
               const isWrong =
-                submitted &&
-                selected === opt &&
-                !opt.startsWith(q.correct);
+                submitted && selected === opt && !opt.startsWith(q.correct);
 
               return (
                 <div
@@ -209,11 +200,14 @@ export default function App() {
                     marginTop: 4,
                     borderRadius: 5,
                     border: "1px solid #ddd",
-                    background:
-                      isCorrect ? "#b6f7b0" :
-                      isWrong ? "#ffb3b3" :
-                      selected === opt ? "#e6f0ff" : "#fff",
-                    cursor: submitted ? "not-allowed" : "pointer"
+                    background: isCorrect
+                      ? "#b6f7b0"
+                      : isWrong
+                      ? "#ffb3b3"
+                      : selected === opt
+                      ? "#e6f0ff"
+                      : "#fff",
+                    cursor: submitted ? "not-allowed" : "pointer",
                   }}
                 >
                   {opt}
@@ -232,7 +226,7 @@ export default function App() {
             background: "blue",
             color: "white",
             border: "none",
-            borderRadius: 6
+            borderRadius: 6,
           }}
         >
           NỘP BÀI
