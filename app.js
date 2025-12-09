@@ -1,210 +1,192 @@
-// ===============================
-// CONFIG GOOGLE APPS SCRIPT URL
-// ===============================
+let students = [];
+let questions = [];
+let quiz = [];
+let answers = {};
+let currentIndex = 0;
+let selectedStudent = null;
+
+// Link Google Script
 const GOOGLE_API =
   "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
-// ===============================
-// BIẾN TRẠNG THÁI
-// ===============================
-let students = [];
-let questions = [];
-let selectedClass = "";
-let selectedStudent = null;
-let quiz = [];
-let answers = {};
-let submitted = false;
-
-// ===============================
-// HÀM LOAD DATA
-// ===============================
+// Load data
 async function loadData() {
-  students = await fetch("./data/students.json").then((r) => r.json());
-  questions = await fetch("./data/questions.json").then((r) => r.json());
-
-  renderClassSelect();
+  try {
+    // Đảm bảo file json nằm đúng thư mục data
+    students = await fetch("data/students.json").then(r => r.json());
+    questions = await fetch("data/questions.json").then(r => r.json());
+    loadClasses();
+  } catch (error) {
+    console.error("Lỗi tải dữ liệu:", error);
+    alert("Không tải được dữ liệu. Vui lòng kiểm tra lại file students.json và questions.json");
+  }
 }
-
 loadData();
 
-// ===============================
-// TẠO DANH SÁCH LỚP
-// ===============================
-function renderClassSelect() {
-  const classSelect = document.getElementById("classSelect");
+function loadClasses() {
+  const select = document.getElementById("select-class");
+  
+  // SỬA: s.Lop -> s.LƠP (theo file JSON)
+  const classes = [...new Set(students.map(s => s.LƠP))];
 
-  const classes = [...new Set(students.map((s) => s["LỚP"]))];
+  select.innerHTML = `<option value="">-- Chọn lớp --</option>` +
+    classes.map(c => `<option value="${c}">${c}</option>`).join("");
 
-  classSelect.innerHTML = `<option value="">-- Chọn lớp --</option>`;
-
-  classes.forEach((c) => {
-    classSelect.innerHTML += `<option value="${c}">${c}</option>`;
-  });
+  select.onchange = () => loadStudents(select.value);
 }
 
-// ===============================
-// KHI CHỌN LỚP → LỌC HỌC SINH
-// ===============================
-function onClassChange() {
-  selectedClass = document.getElementById("classSelect").value;
-  const studentSelect = document.getElementById("studentSelect");
+function loadStudents(cls) {
+  const select = document.getElementById("select-student");
+  
+  // SỬA: s.Lop -> s.LƠP
+  const list = students.filter(s => s.LƠP === cls);
 
-  studentSelect.innerHTML = `<option value="">-- Chọn học sinh --</option>`;
+  select.innerHTML = `<option value="">-- Chọn học sinh --</option>` +
+    // SỬA: s.Ten -> s.TEN
+    list.map(s => `<option value="${s.STT}">${s.STT} - ${s.TEN}</option>`).join("");
 
-  if (!selectedClass) return;
-
-  const filtered = students.filter((s) => s["LỚP"] === selectedClass);
-
-  filtered.forEach((s) => {
-    studentSelect.innerHTML += `
-      <option value="${s["STT"]}">${s["STT"]} - ${s["TÊN"]}</option>`;
-  });
+  select.onchange = () => {
+    selectedStudent = list.find(s => s.STT == select.value);
+  };
 }
 
-// ===============================
-// KHI CHỌN HỌC SINH
-// ===============================
-function onStudentChange() {
-  const stt = document.getElementById("studentSelect").value;
-  selectedStudent = students.find((s) => String(s["STT"]) === stt);
-}
+// Shuffle - Trộn mảng
+const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
 
-// ===============================
-// SHUFFLE UTILITY
-// ===============================
-function shuffle(arr) {
-  return [...arr].sort(() => Math.random() - 0.5);
-}
+// Pick 20 Qs NB–TH–VD
+function buildQuiz() {
+  const NB = questions.filter(q => q.level === "NB");
+  const TH = questions.filter(q => q.level === "TH");
+  const VD = questions.filter(q => q.level === "VD");
 
-// ===============================
-// LẤY 20 CÂU THEO TỈ LỆ NB–TH–VD
-// ===============================
-function pickQuestions() {
-  const NB = questions.filter((q) => q.level === "NB");
-  const TH = questions.filter((q) => q.level === "TH");
-  const VD = questions.filter((q) => q.level === "VD");
+  // Nếu số lượng câu hỏi trong kho không đủ, code có thể bị lỗi ở bước slice
+  // Bạn nên đảm bảo file questions.json có đủ số lượng câu hỏi
+  quiz = [
+    ...shuffle(NB).slice(0, 8),
+    ...shuffle(TH).slice(0, 7),
+    ...shuffle(VD).slice(0, 5),
+  ];
 
-  const pickNB = shuffle(NB).slice(0, 8);
-  const pickTH = shuffle(TH).slice(0, 7);
-  const pickVD = shuffle(VD).slice(0, 5);
-
-  const final = shuffle([...pickNB, ...pickTH, ...pickVD]).map((q) => ({
+  quiz = shuffle(quiz).map(q => ({
     ...q,
-    options: shuffle(q.options),
+    options: shuffle(q.options)
   }));
 
-  return final;
-}
-
-// ===============================
-// BẮT ĐẦU LÀM BÀI
-// ===============================
-function startQuiz() {
-  if (!selectedStudent) return alert("Hãy chọn học sinh!");
-
-  quiz = pickQuestions();
   answers = {};
-  submitted = false;
-
-  document.getElementById("startScreen").style.display = "none";
-  document.getElementById("quizScreen").style.display = "block";
-
-  renderQuiz();
+  currentIndex = 0;
+  updateOverview();
+  showQuestion();
 }
 
-// ===============================
-// HIỂN THỊ CÂU HỎI
-// ===============================
-function renderQuiz() {
-  const box = document.getElementById("quizBox");
-  box.innerHTML = "";
+// UI switch
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
 
-  quiz.forEach((q, index) => {
-    const selected = answers[q.id];
+// START
+document.getElementById("btn-start").onclick = () => {
+  if (!selectedStudent) return alert("Chưa chọn học sinh!");
 
-    let html = `
-      <div class="question-block">
-        <div class="q-title"><b>Câu ${index + 1}:</b> ${q.q}</div>
-    `;
+  buildQuiz();
+  
+  // SỬA: Hiển thị tên và lớp đúng theo key trong JSON
+  document.getElementById("student-info").innerHTML =
+    `HS: <b>${selectedStudent.TEN}</b> – Lớp ${selectedStudent.LƠP}`;
 
-    q.options.forEach((opt) => {
-      const isCorrect = submitted && opt.startsWith(q.correct);
-      const isWrong =
-        submitted && selected === opt && !opt.startsWith(q.correct);
+  showScreen("screen-quiz");
+};
 
-      html += `
-        <div class="option
-            ${selected === opt ? "selected" : ""}
-            ${isCorrect ? "correct" : ""}
-            ${isWrong ? "wrong" : ""}"
-            onclick="chooseAnswer(${q.id}, '${opt.replace(/'/g, "\\'")}')">
+// SHOW QUESTION
+function showQuestion() {
+  if (!quiz[currentIndex]) return; // Phòng trường hợp mảng quiz rỗng
+
+  const q = quiz[currentIndex];
+  const box = document.getElementById("question-box");
+
+  box.innerHTML = `
+      <h3>Câu ${currentIndex + 1}: ${q.q}</h3>
+      ${q.options
+        .map(opt => `
+          <div class="option ${answers[q.id] === opt ? "selected" : ""}"
+               onclick="chooseAnswer('${q.id}', '${opt.replace(/'/g, "\\'")}')">
             ${opt}
-        </div>`;
-    });
-
-    html += `</div>`;
-
-    box.innerHTML += html;
-  });
-
-  document.getElementById("studentInfo").innerHTML =
-    `<b>${selectedStudent["TÊN"]}</b> – Lớp <b>${selectedStudent["LỚP"]}</b>`;
+          </div>
+        `)
+        .join("")}
+  `;
 }
 
-// ===============================
-// CHỌN ĐÁP ÁN
-// ===============================
-function chooseAnswer(qid, opt) {
-  if (submitted) return;
-  answers[qid] = opt;
-  renderQuiz();
+// Choose answer
+function chooseAnswer(id, opt) {
+  answers[id] = opt;
+  updateOverview();
+  showQuestion();
 }
 
-// ===============================
-// NỘP BÀI
-// ===============================
-function submitQuiz() {
-  if (Object.keys(answers).length < quiz.length) {
-    if (!confirm("Bạn chưa trả lời hết. Bạn có chắc muốn nộp?")) return;
-  }
+// Overview buttons (1–20)
+function updateOverview() {
+  const box = document.getElementById("overview");
 
-  submitted = true;
+  box.innerHTML = quiz
+    .map((q, i) => {
+      let cls = "over-btn";
+      if (answers[q.id]) cls += " answered";
+      return `<div class="${cls}" onclick="jumpTo(${i})">${i + 1}</div>`;
+    })
+    .join("");
+}
+
+function jumpTo(i) {
+  currentIndex = i;
+  showQuestion();
+}
+
+// NEXT / PREV
+document.getElementById("btn-next").onclick = () => {
+  if (currentIndex < quiz.length - 1) currentIndex++;
+  showQuestion();
+};
+document.getElementById("btn-prev").onclick = () => {
+  if (currentIndex > 0) currentIndex--;
+  showQuestion();
+};
+
+// Submit
+document.getElementById("btn-submit").onclick = () => {
+  if (!confirm("Bạn chắc chắn muốn nộp bài?")) return;
 
   const correctCount = quiz.filter(
-    (q) => answers[q.id] && answers[q.id].startsWith(q.correct)
+    q => answers[q.id] && answers[q.id].startsWith(q.correct)
   ).length;
 
-  const result = {
-    lop: selectedStudent["LỚP"],
-    stt: selectedStudent["STT"],
-    ten: selectedStudent["TÊN"],
-    score: Math.round((correctCount / quiz.length) * 10),
+  const score = Math.round((correctCount / quiz.length) * 10);
+
+  const resultPayload = {
+    // SỬA: Lấy dữ liệu từ key viết hoa, gán vào key viết thường để gửi đi (nếu Google Script yêu cầu)
+    lop: selectedStudent.LƠP,
+    stt: selectedStudent.STT,
+    ten: selectedStudent.TEN,
+    score,
     correctCount,
     total: quiz.length,
-    timestamp: new Date().toLocaleString("vi-VN"),
+    answers
   };
 
-  sendToGoogle(result);
-  renderQuiz();
+  // Gửi dữ liệu
+  fetch(GOOGLE_API, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(resultPayload)
+  })
+  .then(() => {
+     console.log("Đã gửi kết quả");
+  })
+  .catch(err => console.error("Lỗi gửi:", err));
 
-  document.getElementById("submitBtn").style.display = "none";
-  document.getElementById("doneMsg").innerHTML =
-    "✔ Đã nộp bài! Kết quả đã gửi lên Google Sheet.";
-}
+  document.getElementById("result-info").innerHTML =
+    `Điểm: <b>${score}</b> (${correctCount}/${quiz.length})`;
 
-// ===============================
-// GỬI LÊN GOOGLE SHEET
-// ===============================
-async function sendToGoogle(data) {
-  try {
-    await fetch(GOOGLE_API, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    console.log("✔ Gửi Google Sheet thành công");
-  } catch (e) {
-    console.error("Lỗi gửi:", e);
-  }
-}
+  showScreen("screen-result");
+};
