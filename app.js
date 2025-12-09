@@ -1,6 +1,6 @@
 /**
- * APP.JS - Phiên bản cập nhật theo students.json mới
- * Cấu trúc dữ liệu khớp: LƠP, TEN, STT
+ * APP.JS - Phiên bản cập nhật tổng 10 câu hỏi
+ * Phân bổ: 5 NB, 2 TH, 3 VD
  */
 
 let students = [];
@@ -26,12 +26,12 @@ async function loadData() {
 
     console.log(`Đã tải: ${students.length} học sinh và ${questions.length} câu hỏi.`);
     
-    // Chỉ nạp danh sách lớp sau khi đã có dữ liệu
+    // Sau khi tải xong thì mới tạo danh sách lớp
     loadClasses();
     
   } catch (error) {
     console.error("Lỗi tải dữ liệu:", error);
-    alert("Lỗi: Không thể tải file data/students.json hoặc data/questions.json. Hãy kiểm tra lại thư mục.");
+    alert("Lỗi: Không thể tải file data/students.json hoặc data/questions.json. Hãy kiểm tra thư mục.");
   }
 }
 
@@ -44,7 +44,7 @@ function loadClasses() {
   // Lấy danh sách lớp duy nhất từ cột "LƠP" (theo file json bạn gửi)
   const classes = [...new Set(students.map(s => s.LƠP))];
 
-  // Sắp xếp lớp tăng dần (7.1, 7.2, ...)
+  // Sắp xếp lớp
   classes.sort();
 
   select.innerHTML = `<option value="">-- Chọn lớp --</option>` +
@@ -77,16 +77,19 @@ const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
 function buildQuiz() {
   if (!questions || questions.length === 0) return alert("Chưa có dữ liệu câu hỏi!");
 
-  // Phân loại câu hỏi (đảm bảo file questions.json có cột 'level')
+  // Phân loại câu hỏi
   const NB = questions.filter(q => q.level === "NB");
   const TH = questions.filter(q => q.level === "TH");
   const VD = questions.filter(q => q.level === "VD");
 
-  // Tạo đề: 8 NB + 7 TH + 5 VD
+  // TẠO ĐỀ: Đã sửa để lấy tổng cộng 10 câu
   quiz = [
-    ...shuffle(NB).slice(0, 8),
-    ...shuffle(TH).slice(0, 7),
-    ...shuffle(VD).slice(0, 5),
+    // 5 NB (có 20 câu nên an toàn)
+    ...shuffle(NB).slice(0, 5), 
+    // 2 TH (chỉ có 2 câu nên lấy hết)
+    ...shuffle(TH).slice(0, 2), 
+    // 3 VD (có 4 câu nên lấy 3)
+    ...shuffle(VD).slice(0, 3), 
   ];
 
   // Xáo trộn đáp án từng câu
@@ -211,7 +214,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       
-      const score = Math.round((correctCount / quiz.length) * 10);
+      // Tính điểm trên thang 10
+      const score = Math.round((correctCount / quiz.length) * 10); 
 
       // Gửi dữ liệu đi (mapping đúng key cho Google Sheet)
       const payload = {
@@ -229,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Gửi request
       fetch(GOOGLE_API, {
         method: "POST",
-        mode: "no-cors", // Quan trọng để không bị chặn bởi CORS policy của Google
+        mode: "no-cors", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       }).then(() => {
@@ -245,6 +249,10 @@ document.addEventListener("DOMContentLoaded", () => {
       showScreen("screen-result");
     };
   }
+
+  // Window Global Functions (để gọi từ HTML onclick nếu cần)
+  window.chooseAnswer = selectAnswer;
+  window.jumpTo = jumpTo;
 
   // Cuối cùng: Gọi hàm tải dữ liệu
   loadData();
