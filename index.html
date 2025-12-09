@@ -1,2 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Web Trắc Nghiệm</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-<!DOCTYPE html><html><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+<body>
+  <div id="app">
+
+    <!-- MÀN HÌNH CHỌN HỌC SINH -->
+    <div id="screen-select" class="screen active">
+      <h2>🎓 Chọn học sinh để bắt đầu</h2>
+
+      <label>Chọn lớp:</label>
+      <select id="select-class"></select>
+
+      <label>Chọn học sinh:</label>
+      <select id="select-student"></select>
+
+      <button id="btn-start">BẮT ĐẦU LÀM BÀI</button>
+    </div>
+
+    <!-- MÀN HÌNH LÀM BÀI -->
+    <div id="screen-quiz" class="screen">
+      <div class="topbar">
+        <div id="student-info"></div>
+        <button id="btn-submit" class="submit">NỘP BÀI</button>
+      </div>
+
+      <div id="question-box"></div>
+
+      <div class="navigator">
+        <button id="btn-prev">⬅ Trước</button>
+        <button id="btn-next">Tiếp ➡</button>
+      </div>
+
+      <div id="overview"></div>
+    </div>
+
+    <!-- MÀN HÌNH KẾT QUẢ -->
+    <div id="screen-result" class="screen">
+      <h2>Kết quả</h2>
+      <p id="result-info"></p>
+      <button onclick="location.reload()">Làm lại từ đầu</button>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
