@@ -1,0 +1,28 @@
+{
+  "classes": {
+    "8A": [
+      {
+        "stt": 1,
+        "name": "Nguyễn Văn A"
+      },
+      {
+        "stt": 2,
+        "name": "Trần Thị B"
+      },
+      {
+        "stt": 3,
+        "name": "Lê Văn C"
+      }
+    ],
+    "8B": [
+      {
+        "stt": 1,
+        "name": "Phạm Thị D"
+      },
+      {
+        "stt": 2,
+        "name": "Hoàng Văn E"
+      }
+    ]
+  }
+}

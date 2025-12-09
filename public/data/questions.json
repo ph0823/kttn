@@ -1,0 +1,28 @@
+{
+  "title": "Kiểm tra giữa kỳ - Tin học",
+  "timeMinutes": 15,
+  "questions": [
+    {
+      "id": 1,
+      "text": "Thiết bị nào sau đây là thiết bị vào của máy tính?",
+      "choices": [
+        "Loa, tai nghe",
+        "Chuột, bàn phím",
+        "Màn hình, máy in",
+        "Máy chiếu, loa"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "id": 2,
+      "text": "Phần mở rộng của tên tệp thường thể hiện:",
+      "choices": [
+        "Ngày tạo",
+        "Kích thước",
+        "Loại tệp",
+        "Đường dẫn"
+      ],
+      "answerIndex": 2
+    }
+  ]
+}
