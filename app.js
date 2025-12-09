@@ -176,9 +176,12 @@ async function submitQuiz() {
     console.error(err);
   }
 
-  document.getElementById("result-info").innerHTML =
-    `Học sinh: <b>${selectedStudent.TEN}</b><br>` +
-    `Bài nộp thành công.`;
+  document.getElementById("result-info").innerHTML = `
+  <div style="font-size:22px; color:#16a34a; margin-top:10px;">
+    Học sinh: <b>${selectedStudent.TEN}</b>
+  </div>
+`;
+
 
   showScreen("screen-result");
 }
