@@ -78,12 +78,16 @@ let allData = [];
 // ----------------------------------------------------
 fetch(API_URL)
   .then(res => res.json())
-  .then(data => {
+  .then(result => {
+    // Cho phép API trả về {data:[...]} hoặc [...]
+    const data = result.data || result;
+
     allData = data.map(item => ({
       ...item,
       stt: Number(item.stt),
       score: Number(item.score)
     }));
+
     loadClassList(allData);
   })
   .catch(err => console.error("Lỗi tải dữ liệu:", err));
