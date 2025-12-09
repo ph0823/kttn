@@ -5,68 +5,78 @@ let answers = {};
 let currentIndex = 0;
 let selectedStudent = null;
 
-// Link Google Script
+// Link Google Script (để gửi điểm)
 const GOOGLE_API =
   "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
-// Load data
+// 1. Hàm tải dữ liệu
 async function loadData() {
   try {
-    // Đảm bảo file json nằm đúng thư mục data
+    // Tải file JSON
     students = await fetch("data/students.json").then(r => r.json());
     questions = await fetch("data/questions.json").then(r => r.json());
+    
+    // Sau khi tải xong thì mới tạo danh sách lớp
     loadClasses();
   } catch (error) {
     console.error("Lỗi tải dữ liệu:", error);
-    alert("Không tải được dữ liệu. Vui lòng kiểm tra lại file students.json và questions.json");
+    alert("Không tìm thấy file dữ liệu (students.json hoặc questions.json). Hãy kiểm tra thư mục 'data'.");
   }
 }
-loadData();
 
+// 2. Hàm hiển thị danh sách lớp
 function loadClasses() {
   const select = document.getElementById("select-class");
   
-  // SỬA: s.Lop -> s.LƠP (theo file JSON)
+  // Kiểm tra an toàn: Nếu không tìm thấy thẻ select thì dừng ngay
+  if (!select) return console.error("Không tìm thấy thẻ id='select-class'");
+
+  // Lấy danh sách lớp (SỬA: s.LƠP viết hoa theo file json)
   const classes = [...new Set(students.map(s => s.LƠP))];
 
   select.innerHTML = `<option value="">-- Chọn lớp --</option>` +
     classes.map(c => `<option value="${c}">${c}</option>`).join("");
 
+  // Khi chọn lớp thì tải danh sách học sinh tương ứng
   select.onchange = () => loadStudents(select.value);
 }
 
+// 3. Hàm hiển thị danh sách học sinh
 function loadStudents(cls) {
   const select = document.getElementById("select-student");
-  
-  // SỬA: s.Lop -> s.LƠP
+  if (!select) return;
+
+  // Lọc học sinh theo lớp (SỬA: s.LƠP)
   const list = students.filter(s => s.LƠP === cls);
 
   select.innerHTML = `<option value="">-- Chọn học sinh --</option>` +
-    // SỬA: s.Ten -> s.TEN
+    // (SỬA: s.TEN viết hoa và s.STT)
     list.map(s => `<option value="${s.STT}">${s.STT} - ${s.TEN}</option>`).join("");
 
   select.onchange = () => {
+    // Tìm học sinh đã chọn
     selectedStudent = list.find(s => s.STT == select.value);
   };
 }
 
-// Shuffle - Trộn mảng
+// Hàm xáo trộn câu hỏi
 const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
 
-// Pick 20 Qs NB–TH–VD
+// 4. Tạo đề thi (20 câu: 8 NB, 7 TH, 5 VD)
 function buildQuiz() {
+  if (!questions || questions.length === 0) return alert("Chưa có dữ liệu câu hỏi!");
+
   const NB = questions.filter(q => q.level === "NB");
   const TH = questions.filter(q => q.level === "TH");
   const VD = questions.filter(q => q.level === "VD");
 
-  // Nếu số lượng câu hỏi trong kho không đủ, code có thể bị lỗi ở bước slice
-  // Bạn nên đảm bảo file questions.json có đủ số lượng câu hỏi
   quiz = [
     ...shuffle(NB).slice(0, 8),
     ...shuffle(TH).slice(0, 7),
     ...shuffle(VD).slice(0, 5),
   ];
 
+  // Xáo trộn đáp án trong từng câu
   quiz = shuffle(quiz).map(q => ({
     ...q,
     options: shuffle(q.options)
@@ -78,29 +88,33 @@ function buildQuiz() {
   showQuestion();
 }
 
-// UI switch
+// Chuyển màn hình
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
 
-// START
-document.getElementById("btn-start").onclick = () => {
-  if (!selectedStudent) return alert("Chưa chọn học sinh!");
+// --- CÁC SỰ KIỆN NÚT BẤM ---
 
-  buildQuiz();
-  
-  // SỬA: Hiển thị tên và lớp đúng theo key trong JSON
-  document.getElementById("student-info").innerHTML =
-    `HS: <b>${selectedStudent.TEN}</b> – Lớp ${selectedStudent.LƠP}`;
+// Nút BẮT ĐẦU
+const btnStart = document.getElementById("btn-start");
+if (btnStart) {
+  btnStart.onclick = () => {
+    if (!selectedStudent) return alert("Vui lòng chọn học sinh trước!");
 
-  showScreen("screen-quiz");
-};
+    buildQuiz();
+    
+    // Hiển thị thông tin HS đang làm bài (SỬA: .TEN và .LƠP)
+    document.getElementById("student-info").innerHTML =
+      `HS: <b>${selectedStudent.TEN}</b> – Lớp ${selectedStudent.LƠP}`;
 
-// SHOW QUESTION
+    showScreen("screen-quiz");
+  };
+}
+
+// Hiển thị câu hỏi hiện tại
 function showQuestion() {
-  if (!quiz[currentIndex]) return; // Phòng trường hợp mảng quiz rỗng
-
+  if (!quiz[currentIndex]) return;
   const q = quiz[currentIndex];
   const box = document.getElementById("question-box");
 
@@ -117,21 +131,21 @@ function showQuestion() {
   `;
 }
 
-// Choose answer
+// Chọn đáp án
 function chooseAnswer(id, opt) {
   answers[id] = opt;
   updateOverview();
   showQuestion();
 }
 
-// Overview buttons (1–20)
+// Cập nhật bảng tổng quan câu hỏi
 function updateOverview() {
   const box = document.getElementById("overview");
-
   box.innerHTML = quiz
     .map((q, i) => {
       let cls = "over-btn";
       if (answers[q.id]) cls += " answered";
+      if (currentIndex === i) cls += " active-q"; // Thêm class cho câu đang chọn
       return `<div class="${cls}" onclick="jumpTo(${i})">${i + 1}</div>`;
     })
     .join("");
@@ -142,51 +156,64 @@ function jumpTo(i) {
   showQuestion();
 }
 
-// NEXT / PREV
-document.getElementById("btn-next").onclick = () => {
+// Nút Tiếp / Trước
+const btnNext = document.getElementById("btn-next");
+const btnPrev = document.getElementById("btn-prev");
+
+if (btnNext) btnNext.onclick = () => {
   if (currentIndex < quiz.length - 1) currentIndex++;
   showQuestion();
 };
-document.getElementById("btn-prev").onclick = () => {
+
+if (btnPrev) btnPrev.onclick = () => {
   if (currentIndex > 0) currentIndex--;
   showQuestion();
 };
 
-// Submit
-document.getElementById("btn-submit").onclick = () => {
-  if (!confirm("Bạn chắc chắn muốn nộp bài?")) return;
+// Nút NỘP BÀI
+const btnSubmit = document.getElementById("btn-submit");
+if (btnSubmit) {
+  btnSubmit.onclick = () => {
+    if (!confirm("Bạn chắc chắn muốn nộp bài?")) return;
 
-  const correctCount = quiz.filter(
-    q => answers[q.id] && answers[q.id].startsWith(q.correct)
-  ).length;
+    // Tính điểm
+    const correctCount = quiz.filter(
+      q => answers[q.id] && answers[q.id].startsWith(q.correct)
+    ).length;
 
-  const score = Math.round((correctCount / quiz.length) * 10);
+    const score = Math.round((correctCount / quiz.length) * 10);
 
-  const resultPayload = {
-    // SỬA: Lấy dữ liệu từ key viết hoa, gán vào key viết thường để gửi đi (nếu Google Script yêu cầu)
-    lop: selectedStudent.LƠP,
-    stt: selectedStudent.STT,
-    ten: selectedStudent.TEN,
-    score,
-    correctCount,
-    total: quiz.length,
-    answers
+    // Chuẩn bị dữ liệu gửi đi (SỬA: .LƠP và .TEN)
+    const resultPayload = {
+      lop: selectedStudent.LƠP,
+      stt: selectedStudent.STT,
+      ten: selectedStudent.TEN,
+      score,
+      correctCount,
+      total: quiz.length,
+      answers
+    };
+
+    // Gửi sang Google Sheet
+    fetch(GOOGLE_API, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(resultPayload)
+    }).catch(err => console.log("Lỗi gửi điểm:", err));
+
+    document.getElementById("result-info").innerHTML =
+      `Điểm: <b>${score}</b> (${correctCount}/${quiz.length} câu đúng)`;
+
+    showScreen("screen-result");
   };
+}
 
-  // Gửi dữ liệu
-  fetch(GOOGLE_API, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(resultPayload)
-  })
-  .then(() => {
-     console.log("Đã gửi kết quả");
-  })
-  .catch(err => console.error("Lỗi gửi:", err));
+// Window Global Functions (để gọi từ HTML onclick nếu cần)
+window.chooseAnswer = chooseAnswer;
+window.jumpTo = jumpTo;
 
-  document.getElementById("result-info").innerHTML =
-    `Điểm: <b>${score}</b> (${correctCount}/${quiz.length})`;
-
-  showScreen("screen-result");
-};
+// --- QUAN TRỌNG: CHẠY CODE KHI WEB ĐÃ TẢI XONG ---
+document.addEventListener("DOMContentLoaded", () => {
+  loadData();
+});
