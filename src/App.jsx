@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> 7b6c7e1 (initial commit)
 import React, { useEffect, useState } from "react";
 
 // ==========================

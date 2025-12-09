@@ -3,9 +3,6 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  base: "/kttn/",   // 
-<<<<<<< HEAD
+  base: "/kttn/",   
 });
-=======
-});
->>>>>>> 7b6c7e1 (initial commit)
+
