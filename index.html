@@ -2,107 +2,190 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Web Trắc Nghiệm</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Web KTTX Tin học THCS Hà Huy Tập</title>
 
   <style>
-    body { font-family: Arial, sans-serif; background: #f3f4f6; margin:0; padding:0; }
-    #app { max-width: 800px; margin: auto; padding: 20px; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #eef2ff;
+      margin: 0;
+      padding: 40px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    #app {
+      width: 780px;
+      background: white;
+      padding: 30px 40px;
+      border-radius: 18px;
+      box-shadow: 0 6px 25px rgba(0,0,0,0.12);
+    }
+
+    h2 {
+      text-align: center;
+      color: #1e3a8a;
+      margin-bottom: 25px;
+      font-size: 26px;
+    }
 
     .screen { display: none; }
     .screen.active { display: block; }
 
+    /* ======= SELECT BOX + BUTTON ======= */
     select, button {
-      width: 100%; padding: 10px; margin: 10px 0; font-size: 18px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 2px solid #c7d2fe;
+      font-size: 17px;
+      margin: 12px 0;
+      background: #fff;
+    }
+
+    button {
+      background: #4f46e5;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: 600;
+    }
+    button:hover { opacity: 0.9; }
+
+    /* ======= LÀM BÀI ======= */
+    #student-info {
+      background: #e0e7ff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      font-size: 17px;
+      color: #1e3a8a;
+      font-weight: 600;
     }
 
     #question-box h3 {
       font-size: 22px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
+      background: #dbeafe;
+      padding: 14px;
+      border-radius: 10px;
+      color: #1e3a8a;
+      line-height: 1.5;
     }
 
+    /* ======= ĐÁP ÁN ======= */
     .options-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 14px;
+      margin-bottom: 20px;
     }
 
     .option {
-      padding: 12px;
-      background: #fff;
-      border-radius: 8px;
-      border: 2px solid #e5e7eb;
+      padding: 16px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
       cursor: pointer;
+      font-size: 17px;
       transition: 0.2s;
+      user-select: none;
+      text-align: center;
     }
 
+    /* hover rõ – dùng cho desktop */
     .option:hover {
-      background: #f0f8ff;
+      background: #eef2ff;
+      border-color: #6366f1;
+      box-shadow: 0 3px 10px rgba(99,102,241,0.3);
+      transform: translateY(-2px);
     }
 
+    /* Đáp án đã chọn */
     .option.selected {
-      border-color: #2563eb;
-      background: #dbeafe;
+      background: #c7d2fe;
+      border-color: #4f46e5;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      font-weight: bold;
+      transform: translateY(-2px);
+      color: #1e3a8a;
     }
 
+    /* ======= NÚT CHUYỂN CÂU ======= */
     .navigator {
-      margin-top: 20px;
+      margin-top: 10px;
       display: flex;
       justify-content: space-between;
+      gap: 15px;
     }
 
+    .navigator button {
+      flex: 1;
+      font-size: 17px;
+    }
+
+    /* ======= OVERVIEW ======= */
     #overview {
-      margin-top: 20px;
+      margin-top: 25px;
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 8px;
+      justify-content: center;
     }
 
     .over-btn {
-      width: 35px;
-      height: 35px;
+      width: 42px;
+      height: 42px;
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 6px;
+      border-radius: 8px;
       background: #e5e7eb;
+      font-size: 16px;
       cursor: pointer;
       font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .over-btn:hover {
+      background: #dbeafe;
     }
 
     .over-btn.answered {
       background: #93c5fd;
+      color: #1e3a8a;
     }
 
     .over-btn.current {
-      outline: 3px solid #2563eb;
+      background: #4f46e5;
+      color: white;
+      transform: scale(1.08);
     }
 
-    /* ---------- SCREEN RESULT ---------- */
+    /* ======= KẾT QUẢ ======= */
     #screen-result {
       text-align: center;
-      padding: 40px 20px;
+      padding: 20px;
     }
 
     .result-card {
-      background: #fff;
+      background: #ffffff;
       padding: 40px;
       border-radius: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 25px rgba(0,0,0,0.12);
     }
 
     .success-icon {
-      font-size: 60px;
+      font-size: 70px;
       color: #16a34a;
     }
 
     #result-info {
-      font-size: 24px;
+      font-size: 22px;
       margin-top: 20px;
       font-weight: bold;
-      color: #16a34a;
+      color: #1e3a8a;
     }
-
   </style>
 </head>
 
@@ -124,16 +207,18 @@
 
     <!-- MÀN HÌNH LÀM BÀI -->
     <div id="screen-quiz" class="screen">
-      <div class="topbar">
-        <div id="student-info" style="margin-bottom: 10px; font-size: 18px;"></div>
-        <button id="btn-submit" class="submit" style="background:#2563eb;color:white;font-size:18px;">NỘP BÀI</button>
-      </div>
+
+      <div id="student-info"></div>
+
+      <button id="btn-submit" style="background:#dc2626;font-size:19px;margin-bottom:18px;">
+        🚀 NỘP BÀI
+      </button>
 
       <div id="question-box"></div>
 
       <div class="navigator">
-        <button id="btn-prev">⬅ Trước</button>
-        <button id="btn-next">Tiếp ➡</button>
+        <button id="btn-prev">⬅ Câu trước</button>
+        <button id="btn-next">Câu tiếp ➡</button>
       </div>
 
       <div id="overview"></div>
@@ -144,19 +229,18 @@
       <div class="result-card">
         <div class="success-icon">✔</div>
         <h2>Bài nộp thành công!</h2>
-
         <p id="result-info"></p>
 
         <button onclick="location.reload()" style="
           margin-top: 30px;
-          background: #2563eb;
+          background: #4f46e5;
           color: white;
           padding: 14px 0;
           font-size: 20px;
           border-radius: 10px;
           width: 100%;
         ">
-          Làm lại từ đầu
+          🔄 Làm lại từ đầu
         </button>
       </div>
     </div>
