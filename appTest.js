@@ -51,10 +51,8 @@ function loadClasses() {
     classes.map(c => `<option value="${c}">${c}</option>`).join("");
 
   select.onchange = () => {
-    loadStudents(select.value);
-    // Reset chọn học sinh khi đổi lớp
-    document.getElementById("select-student").innerHTML = ""; 
     selectedStudent = null;
+    loadStudents(select.value);
   };
 }
 
