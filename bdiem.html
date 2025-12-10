@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Bảng điểm học sinh</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background:#f8f8f8; }
+    h1 { font-size: 26px; }
+
+    select { padding: 8px; font-size: 15px; margin-right: 10px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-top: 20px;
+      display: none;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th { background: #eee; user-select:none; cursor:pointer; }
+
+    .missing-box {
+      margin-top: 20px;
+      padding: 12px;
+      background:#fff4f4;
+      border-left: 4px solid #d9534f;
+      display:none;
+    }
+
+    .duplicate td {
+      background: #ffe9e9;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Bảng điểm học sinh</h1>
+
+<label><b>Lọc theo lớp:</b></label>
+<select id="lopFilter">
+  <option value="">-- Chọn lớp --</option>
+</select>
+
+<label><b>Sắp xếp theo:</b></label>
+<select id="sortFilter" disabled>
+  <option value="stt">STT (tăng dần)</option>
+  <option value="score">Điểm (tăng dần)</option>
+</select>
+
+<table id="scoreTable">
+  <thead>
+    <tr>
+      <th>STT</th>
+      <th>Tên học sinh</th>
+      <th>Lớp</th>
+      <th>Điểm</th>
+      <th>Thời gian</th>
+      <th>Số lần</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div id="missingBox" class="missing-box">
+  <h3>Danh sách học sinh chưa làm bài</h3>
+  <ul id="missingList"></ul>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
+const STUDENT_URL = "data/students.json";
+
+let allScores = [];
+let allStudents = [];
+let duplicateMap = {};
+let autoRefresh = null;   // bộ đếm tự cập nhật
+
+// ------------------------
+// KHỞI TẠO DANH SÁCH LỚP CỐ ĐỊNH
+// ------------------------
+function loadFixedClasses() {
+  const classes = [];
+  for (let i = 1; i <= 11; i++) classes.push("7." + i);
+
+  const select = document.getElementById("lopFilter");
+  classes.forEach(c => {
+    const op = document.createElement("option");
+    op.value = c;
+    op.textContent = c;
+    select.appendChild(op);
+  });
+
+  select.onchange = handleClassChange;
+  document.getElementById("sortFilter").onchange = applyFilters;
+}
+
+// ------------------------
+// TẢI DỮ LIỆU
+// ------------------------
+async function loadAll() {
+  try {
+    const scoreRes = await fetch(API_URL, { cache: "no-store" });
+    const raw = await scoreRes.json();
+
+    allScores = (raw.data || raw).map(r => ({
+      stt: Number(r.stt),
+      ten: r.ten,
+      lop: r.lop,
+      score: r.score === "" ? null : Number(r.score),
+      timestamp: r.timestamp || r.time || ""
+    }));
+
+    const stuRes = await fetch(STUDENT_URL);
+    allStudents = await stuRes.json();
+
+    buildDuplicateMap();
+    applyFilters(); // cập nhật giao diện nếu đã chọn lớp
+  } catch (e) {
+    console.error(e);
+    alert("Không thể tải dữ liệu!");
+  }
+}
+
+// ------------------------
+// Xử lý chọn lớp: bật auto refresh
+// ------------------------
+function handleClassChange() {
+  const lop = document.getElementById("lopFilter").value;
+
+  // hủy auto-refresh cũ
+  if (autoRefresh) clearInterval(autoRefresh);
+
+  if (lop) {
+    loadAll(); 
+    autoRefresh = setInterval(loadAll, 45000); // 45 giây cập nhật
+  } else {
+    document.getElementById("scoreTab
