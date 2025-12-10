@@ -136,47 +136,52 @@ function showStudentDetail(stt) {
         return;
     }
 
-    // Parse danh sách câu sai
-    let wrong = {};
+    // Parse danh sách câu và đáp án HS chọn
+    let answerMap = {};
     try {
-        wrong = JSON.parse(student.details);
+        answerMap = JSON.parse(student.details);
     } catch (e) {
-        wrong = {};
+        answerMap = {};
     }
 
     let html = `
-        <div style="margin-top:20px; padding:15px; background:white; border-radius:10px; box-shadow:0 0 5px #bbb">
+        <div style="margin-top:20px; padding:15px; background:white; 
+                    border-radius:10px; box-shadow:0 0 5px #bbb">
             <h3>Chi tiết bài làm của <span style="color:#007bff">${student.ten}</span></h3>
             <p>Điểm: <b style="color:green">${student.score}</b></p>
             <h4 style="margin-top:15px">Các câu sai:</h4>
     `;
 
-    // Nếu không có câu sai
-    if (Object.keys(wrong).length === 0) {
-        html += `<p style="color:green; font-weight:bold">🎉 Không sai câu nào.</p></div>`;
-        box.innerHTML = html;
-        return;
-    }
+    let wrongCount = 0;
 
-    // Duyệt từng câu sai
-    Object.keys(wrong).forEach(qId => {
+    // Duyệt toàn bộ các câu học sinh đã trả lời
+    Object.keys(answerMap).forEach(qId => {
 
-        // Tìm câu hỏi gốc theo id
+        // Tìm câu hỏi gốc
         const q = questions.find(x => x.id == qId || String(x.id) == String(qId));
+        if (!q) return;
 
-        // Lấy đáp án đúng
-        let correctAnswer = "";
-        if (q && q.options && q.correct) {
-            correctAnswer = q.options.find(opt => opt.startsWith(q.correct + ".")) || "";
+        // Xác định đáp án đúng từ questions.json
+        const correctAnswer = q.options.find(opt => opt.startsWith(q.correct + ".")) || "";
+
+        // Đáp án học sinh đã chọn
+        const studentAnswer = answerMap[qId];
+
+        // ⭐ Nếu học sinh trả lời ĐÚNG → BỎ QUA (không hiển thị)
+        if (studentAnswer.startsWith(q.correct + ".")) {
+            return;
         }
 
+        wrongCount++;
+
+        // Render câu sai
         html += `
             <div style="margin-top:15px; padding:12px; 
                         border:1px solid #ccc; border-left:6px solid #d9534f; 
                         border-radius:5px; background:#fafafa">
 
                 <div style="font-size:16px; font-weight:bold; margin-bottom:6px">
-                    Câu ${qId}: ${q ? q.q : "(Không tìm thấy nội dung câu hỏi)"}
+                    Câu ${qId}: ${q.q}
                 </div>
 
                 <div style="margin:6px 0">
@@ -186,19 +191,20 @@ function showStudentDetail(stt) {
 
                 <div>
                     <b>HS chọn:</b> 
-                    <span style="color:#d9534f; font-weight:bold">${wrong[qId]}</span>
+                    <span style="color:#d9534f; font-weight:bold">${studentAnswer}</span>
                 </div>
-
             </div>
         `;
     });
 
+    // Nếu không có câu sai nào
+    if (wrongCount === 0) {
+        html += `<p style="color:green; font-weight:bold">🎉 Không sai câu nào.</p>`;
+    }
+
     html += `</div>`;
     box.innerHTML = html;
 }
-
-
-
 
 // -------------------------------------------------------------
 // 6) Load câu hỏi (nếu bạn muốn hiển thị câu hỏi gốc sau này)
