@@ -1,26 +1,26 @@
-// review.js (bản chuẩn – hoạt động 100%)
+// review.js (phiên bản đã fix: lọc lần nộp đầu tiên, sắp theo STT, hiển thị bảng)
 
 let questions = [];
-let submissions = [];    // Toàn bộ danh sách trả về từ Google API
-let filtered = [];       // Danh sách của lớp đã chọn (điểm >= 6)
+let submissions = [];
+let filteredFirstTime = [];   // danh sách bài lần đầu theo lớp
 
 const GOOGLE_API = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
     loadQuestions();
     loadApiData();
-
     document.getElementById("btn-view").onclick = showStudentResult;
 });
 
-// ----------------------------------------------------
-// 1) Load API Google Sheet
-// ----------------------------------------------------
+// -------------------------------------------------------------
+// 1) LOAD toàn bộ submissions từ Google Sheet
+// -------------------------------------------------------------
 async function loadApiData() {
     try {
         const res = await fetch(GOOGLE_API);
-        submissions = await res.json();   // ⭐ API trả về MẢNG → đọc trực tiếp
-        console.log("Loaded submissions:", submissions);
+        submissions = await res.json();
+
+        console.log("Dữ liệu tải từ Google Sheet:", submissions);
 
         loadClassList();
 
@@ -30,106 +30,149 @@ async function loadApiData() {
     }
 }
 
-// ----------------------------------------------------
-// 2) Tạo danh sách lớp từ submissions
-// ----------------------------------------------------
+// -------------------------------------------------------------
+// 2) Tạo danh sách lớp
+// -------------------------------------------------------------
 function loadClassList() {
-    const classes = [...new Set(submissions.map(s => s.lop))].sort();
-    const selectClass = document.getElementById("select-class");
+    const select = document.getElementById("select-class");
 
-    selectClass.innerHTML =
+    const classes = [...new Set(submissions.map(s => s.lop))].sort();
+
+    select.innerHTML =
         `<option value="">-- Chọn lớp --</option>` +
         classes.map(c => `<option value="${c}">${c}</option>`).join("");
 
-    selectClass.onchange = () => loadStudentList(selectClass.value);
+    select.onchange = () => processClass(select.value);
 }
 
-// ----------------------------------------------------
-// 3) Lọc học sinh điểm >= 6 theo lớp
-// ----------------------------------------------------
-function loadStudentList(lop) {
-    const select = document.getElementById("select-student");
+// -------------------------------------------------------------
+// 3) Lọc bài LẦN ĐẦU theo học sinh
+// -------------------------------------------------------------
+function processClass(lop) {
+    const tableArea = document.getElementById("result-area");
+    tableArea.innerHTML = "<p>Đang xử lý...</p>";
 
-    filtered = submissions.filter(s => s.lop == lop && s.score >= 6);
+    // Lấy tất cả bài của lớp
+    const classSubs = submissions.filter(s => s.lop == lop);
 
-    if (filtered.length === 0) {
-        select.innerHTML = `<option>-- Không có học sinh đủ 6 điểm --</option>`;
-        return;
-    }
+    // Nhóm theo STT
+    const map = {};
+    classSubs.forEach(s => {
+        const key = s.stt;
+        if (!map[key]) map[key] = [];
+        map[key].push(s);
+    });
 
-    select.innerHTML =
-        `<option value="">-- Chọn học sinh --</option>` +
-        filtered
-            .map(s => `<option value="${s.stt}">${s.stt} - ${s.ten} (Điểm: ${s.score})</option>`)
-            .join("");
+    // Lấy bài làm lần đầu (timestamp nhỏ nhất)
+    filteredFirstTime = [];
+
+    Object.keys(map).forEach(stt => {
+        const list = map[stt];
+
+        // Chọn bài có timestamp nhỏ nhất = lần nộp đầu
+        const first = list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+
+        // Chỉ giữ học sinh đủ 6 điểm
+        if (first.score >= 6) {
+            filteredFirstTime.push(first);
+        }
+    });
+
+    // Sắp xếp theo STT
+    filteredFirstTime.sort((a, b) => Number(a.stt) - Number(b.stt));
+
+    // Hiển thị bảng
+    renderTable(filteredFirstTime, lop);
 }
 
-// ----------------------------------------------------
-// 4) Load câu hỏi từ JSON gốc
-// ----------------------------------------------------
-async function loadQuestions() {
-    const res = await fetch("data/questions.json");
-    questions = await res.json();
-
-    questions = questions.map((q, i) => ({
-        ...q,
-        id: q.id || "Q" + (i + 1)
-    }));
-}
-
-// ----------------------------------------------------
-// 5) Hiển thị chi tiết bài làm
-// ----------------------------------------------------
-function showStudentResult() {
-    const className = document.getElementById("select-class").value;
-    const stt = document.getElementById("select-student").value;
-
-    if (!className || !stt) {
-        alert("Vui lòng chọn lớp và học sinh!");
+// -------------------------------------------------------------
+// 4) Render bảng danh sách học sinh đủ 6 điểm & lần đầu
+// -------------------------------------------------------------
+function renderTable(list, lop) {
+    if (list.length === 0) {
+        document.getElementById("result-area").innerHTML =
+            `<p>❌ Không có học sinh nào làm bài lần đầu và đạt ≥ 6 điểm.</p>`;
         return;
-    }
-
-    const student = filtered.find(s => String(s.stt) === String(stt));
-
-    if (!student) {
-        alert("❌ Không tìm thấy bài làm!");
-        return;
-    }
-
-    // Parse details → danh sách câu sai
-    let wrongDetails = {};
-    try {
-        wrongDetails = JSON.parse(student.details);
-    } catch (err) {
-        console.error("Lỗi parse details:", err);
     }
 
     let html = `
-      <div class="result-box">
-          <p>Học sinh: <b>${student.ten}</b> — Lớp ${className}</p>
-          <p class="good">Điểm: ${student.score}</p>
-          <h3>Các câu làm sai:</h3>
+        <h3>Danh sách học sinh lớp ${lop} (lần nộp đầu, ≥ 6 điểm)</h3>
+        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; background:white;">
+            <tr style="background:#eee">
+                <th>STT</th>
+                <th>Tên học sinh</th>
+                <th>Điểm</th>
+                <th>Xem chi tiết</th>
+            </tr>
     `;
 
-    // Nếu 0 câu sai
-    if (Object.keys(wrongDetails).length === 0) {
-        html += `<p class="good">🎉 Hoàn hảo! Không có câu nào sai.</p></div>`;
-        document.getElementById("result-area").innerHTML = html;
+    list.forEach(s => {
+        html += `
+            <tr>
+                <td>${s.stt}</td>
+                <td>${s.ten}</td>
+                <td style="color:green;font-weight:bold">${s.score}</td>
+                <td><button onclick="showStudentDetail('${s.stt}')">Xem</button></td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+
+    html += `<div id="detail-box"></div>`;
+
+    document.getElementById("result-area").innerHTML = html;
+}
+
+// -------------------------------------------------------------
+// 5) Hiển thị chi tiết bài làm học sinh
+// -------------------------------------------------------------
+function showStudentDetail(stt) {
+    const student = filteredFirstTime.find(s => String(s.stt) === String(stt));
+    const box = document.getElementById("detail-box");
+
+    if (!student) {
+        box.innerHTML = "<p>Không tìm thấy bài làm.</p>";
         return;
     }
 
-    // Hiển thị từng câu sai
-    for (const qId in wrongDetails) {
-        const q = questions.find(x => x.id == qId || xId == Number(qId));
-
-        html += `
-          <div class="question">
-              <div class='label'>${q ? q.q : "Câu " + qId}</div>
-              <div>Học sinh chọn: <span class="bad">${wrongDetails[qId]}</span></div>
-          </div>
-        `;
+    // Parse JSON chi tiết câu sai
+    let wrong = {};
+    try {
+        wrong = JSON.parse(student.details);
+    } catch (e) {
+        wrong = {};
     }
 
+    let html = `
+        <div class="result-box">
+            <h3>Chi tiết bài làm của ${student.ten}</h3>
+            <p>Điểm: <b style="color:green">${student.score}</b></p>
+            <h4>Các câu sai:</h4>
+    `;
+
+    if (Object.keys(wrong).length === 0) {
+        html += `<p style="color:green">🎉 Không có câu nào sai.</p></div>`;
+        box.innerHTML = html;
+        return;
+    }
+
+    Object.keys(wrong).forEach(qId => {
+        html += `
+            <div class="question">
+                <p><b>Câu ${qId}:</b> ${wrong[qId]}</p>
+            </div>
+        `;
+    });
+
     html += `</div>`;
-    document.getElementById("result-area").innerHTML = html;
+    box.innerHTML = html;
+}
+
+// -------------------------------------------------------------
+// 6) Load câu hỏi (nếu bạn muốn hiển thị câu hỏi gốc sau này)
+// -------------------------------------------------------------
+async function loadQuestions() {
+    const res = await fetch("data/questions.json");
+    questions = await res.json();
 }
