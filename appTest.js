@@ -169,6 +169,7 @@ function showQuestion() {
 
       // 1. Lưu đáp án
       answers[id] = val;
+      updateSubmitButton();
 
       // 2. Cập nhật giao diện (CSS) trực tiếp
       optionsElements.forEach(opt => opt.classList.remove("selected"));
@@ -205,8 +206,9 @@ function updateOverviewStatus() {
     if (i === currentIndex) btn.classList.add("current");
     
     // Nếu đã trả lời
-    if (answers[q.id]) btn.classList.add("answered");
+    if (answers[q.id]) btn.classList.add("answered");    
   });
+  updateSubmitButton();
 }
 
 window.jumpTo = i => {
@@ -357,6 +359,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Nút Nộp bài
   document.getElementById("btn-submit").onclick = submitQuiz;
+
+  function updateSubmitButton() {
+    const total = quiz.length;
+    const answered = Object.keys(answers).length;
+    const btn = document.getElementById("btn-submit");
+  
+    if (answered < total) {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+      btn.innerText = `NỘP BÀI (${total - answered} câu còn lại)`;
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.innerText = "NỘP BÀI";
+    }
+  }
 
   // Khởi chạy
   loadData();
