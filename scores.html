@@ -4,56 +4,84 @@
   <meta charset="UTF-8">
   <title>Bảng điểm học sinh</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background:#f8f8f8; }
-    h1 { font-size: 26px; }
-
-    select { padding: 8px; font-size: 15px; margin-right: 10px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { font-size: 28px; }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
       margin-top: 20px;
-      display: none;
+      display: none; /* ẨN bảng khi chưa chọn lớp */
     }
 
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 8px;
       text-align: left;
+      vertical-align: middle;
+    }
+    th { background: #f2f2f2; }
+
+    /* Tô màu xen kẽ */
+    tbody tr:nth-child(odd) {
+      background: #fafafa;
     }
 
-    th { background: #eee; user-select:none; cursor:pointer; }
+    select {
+      padding: 8px;
+      font-size: 16px;
+      margin-left: 10px;
+    }
 
     .missing-box {
-      margin-top: 20px;
+      margin-top: 15px;
       padding: 12px;
-      background:#fff4f4;
-      border-left: 4px solid #d9534f;
-      display:none;
+      border: 2px dashed #d9534f;
+      background: #fff0f0;
+      display: none;
     }
 
-    .duplicate td {
-      background: #ffe9e9;
+    /* highlight học sinh nộp nhiều lần */
+    tr.duplicate td {
+      background: #ffe6e6;
     }
+
+    .count-badge {
+      display: inline-block;
+      min-width: 26px;
+      padding: 2px 6px;
+      text-align: center;
+      border-radius: 12px;
+      background: #f3f3f3;
+      font-weight: 600;
+    }
+
+    .controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   </style>
 </head>
 <body>
 
 <h1>Bảng điểm học sinh</h1>
 
-<label><b>Lọc theo lớp:</b></label>
-<select id="lopFilter">
-  <option value="">-- Chọn lớp --</option>
-</select>
+<div class="controls">
+  <label><b>Lọc theo lớp:</b></label>
+  <select id="lop-filter">
+    <option value="">-- Chọn lớp --</option>
+  </select>
 
-<label><b>Sắp xếp theo:</b></label>
-<select id="sortFilter" disabled>
-  <option value="stt">STT (tăng dần)</option>
-  <option value="score">Điểm (tăng dần)</option>
-</select>
+  <label style="margin-left:10px;"><b>Sắp xếp theo:</b></label>
+  <select id="sort-filter" disabled>
+    <option value="stt">STT (tăng dần)</option>
+    <option value="score">Điểm (tăng dần)</option>
+  </select>
 
-<table id="scoreTable">
+  <div style="margin-left:auto; font-size:14px;">
+    <span>Ghi chú: </span>
+    <span style="margin-left:6px;">Dòng màu đỏ = nộp nhiều lần</span>
+  </div>
+</div>
+
+<table id="scoreTable" aria-label="Bảng điểm">
   <thead>
     <tr>
       <th>STT</th>
@@ -67,147 +95,186 @@
   <tbody></tbody>
 </table>
 
-<div id="missingBox" class="missing-box">
+<div id="missingStudents" class="missing-box" aria-live="polite">
   <h3>Danh sách học sinh chưa làm bài</h3>
   <ul id="missingList"></ul>
 </div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
-const STUDENT_URL = "data/students.json";
 
-let allScores = [];
-let allStudents = [];
+let allData = [];
 let duplicateMap = {};
 
-async function loadAll() {
-  try {
-    const scoreRes = await fetch(API_URL);
-    const raw = await scoreRes.json();
-    allScores = (raw.data || raw).map(r => ({
-      stt: Number(r.stt),
-      ten: r.ten,
-      lop: r.lop,
-      score: r.score === "" ? null : Number(r.score),
-      timestamp: r.timestamp || r.time || ""
-    }));
+// -------------------- Format thời gian --------------------
+function formatTimestamp(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (isNaN(d)) return ts;
 
-    // tải danh sách học sinh chính thức
-    const stuRes = await fetch(STUDENT_URL);
-    allStudents = await stuRes.json();
+  let hh = String(d.getHours()).padStart(2, "0");
+  let mm = String(d.getMinutes()).padStart(2, "0");
+  let ss = String(d.getSeconds()).padStart(2, "0");
+  let dd = String(d.getDate()).padStart(2, "0");
+  let mo = String(d.getMonth() + 1).padStart(2, "0");
+  let yy = String(d.getFullYear()).slice(2);
 
-    buildDuplicateMap();
-    loadClassList();
-  } catch (e) {
-    console.error(e);
-    alert("Không thể tải dữ liệu!");
-  }
+  return `${hh}:${mm}:${ss} ${dd}-${mo}-${yy}`;
 }
 
-function buildDuplicateMap() {
+// -------------------- Tải dữ liệu --------------------
+fetch(API_URL)
+  .then(res => res.json())
+  .then(result => {
+    const data = result.data || result;
+
+    allData = data.map(item => ({
+      ...item,
+      stt: Number(item.stt) || 0,
+      score: item.score === "" ? null : Number(item.score),
+      timestamp: item.timestamp || item.time || item.Thời_gian || item.Thoi_gian || ""
+    }));
+
+    // Lập map số lần nộp (trong dữ liệu gốc, chưa lọc lần đầu)
+    buildDuplicateMap(allData);
+
+    // 👉 Giữ bài làm đầu tiên
+    let firstMap = {};
+    allData.forEach(r => {
+      const key = `${r.lop}|${r.stt}`;
+      const time = new Date(r.timestamp).getTime();
+
+      if (!firstMap[key] || time < new Date(firstMap[key].timestamp).getTime()) {
+        firstMap[key] = r;
+      }
+    });
+
+    // Chỉ giữ bản ghi nộp đầu tiên
+    allData = Object.values(firstMap);
+
+    // Tạo danh sách lớp
+    loadClassList(allData);
+  })
+  .catch(() => alert("Không tải được dữ liệu từ Google Sheet!"));
+
+// -------------------- Duplicate Map --------------------
+function buildDuplicateMap(data) {
   duplicateMap = {};
-  allScores.forEach(r => {
+  data.forEach(r => {
     const key = `${r.lop}|${r.stt}`;
     duplicateMap[key] = (duplicateMap[key] || 0) + 1;
   });
 }
 
-function loadClassList() {
-  const select = document.getElementById("lopFilter");
-  const classes = [...new Set(allScores.map(x => x.lop))].sort();
+// -------------------- Danh sách lớp --------------------
+function loadClassList(data) {
+  const select = document.getElementById("lop-filter");
+  const uniqueClasses = [...new Set(data.map(d => d.lop))].sort();
 
-  classes.forEach(c => {
+  uniqueClasses.forEach(lop => {
     const op = document.createElement("option");
-    op.value = c;
-    op.textContent = c;
+    op.value = lop;
+    op.textContent = lop;
     select.appendChild(op);
   });
 
   select.onchange = applyFilters;
-  document.getElementById("sortFilter").onchange = applyFilters;
+  document.getElementById("sort-filter").onchange = applyFilters;
 }
 
+// -------------------- Lọc + sắp xếp --------------------
 function applyFilters() {
-  const lop = document.getElementById("lopFilter").value;
-  const sort = document.getElementById("sortFilter").value;
+  const lop = document.getElementById("lop-filter").value;
+  const sort = document.getElementById("sort-filter").value;
 
   const table = document.getElementById("scoreTable");
-  const missingBox = document.getElementById("missingBox");
+  const box = document.getElementById("missingStudents");
 
   if (!lop) {
     table.style.display = "none";
-    missingBox.style.display = "none";
-    document.getElementById("sortFilter").disabled = true;
+    box.style.display = "none";
+    document.getElementById("sort-filter").disabled = true;
     return;
   }
 
-  document.getElementById("sortFilter").disabled = false;
   table.style.display = "table";
+  document.getElementById("sort-filter").disabled = false;
 
-  let filtered = allScores.filter(x => x.lop === lop);
+  let filtered = allData.filter(r => r.lop === lop);
 
   if (sort === "stt") {
     filtered.sort((a, b) => a.stt - b.stt);
   } else if (sort === "score") {
     filtered.sort((a, b) => {
-      const sa = a.score ?? Infinity;
-      const sb = b.score ?? Infinity;
-      return sa - sb || a.stt - b.stt;
+      let A = a.score ?? 999;
+      let B = b.score ?? 999;
+      return A - B;
     });
   }
 
   renderTable(filtered);
-  detectMissingStudents(filtered, lop);
+  detectMissingStudents(filtered);
 }
 
+// -------------------- Render bảng --------------------
 function renderTable(data) {
   const tbody = document.querySelector("#scoreTable tbody");
   tbody.innerHTML = "";
 
-  data.forEach(r => {
-    const tr = document.createElement("tr");
-    const key = `${r.lop}|${r.stt}`;
+  data.forEach(row => {
+    const key = `${row.lop}|${row.stt}`;
     const times = duplicateMap[key] || 1;
 
+    const tr = document.createElement("tr");
     if (times > 1) tr.classList.add("duplicate");
 
     tr.innerHTML = `
-      <td>${r.stt}</td>
-      <td>${r.ten}</td>
-      <td>${r.lop}</td>
-      <td>${r.score ?? ""}</td>
-      <td>${r.timestamp}</td>
-      <td>${times}</td>
+      <td>${row.stt}</td>
+      <td>${escapeHtml(row.ten || "")}</td>
+      <td>${escapeHtml(row.lop)}</td>
+      <td>${row.score ?? ""}</td>
+      <td>${formatTimestamp(row.timestamp)}</td>
+      <td><span class="count-badge">${times}</span></td>
     `;
+
     tbody.appendChild(tr);
   });
 }
 
-function detectMissingStudents(scoreData, lop) {
-  const missingBox = document.getElementById("missingBox");
+// -------------------- Tìm học sinh chưa làm bài --------------------
+function detectMissingStudents(filtered) {
+  const box = document.getElementById("missingStudents");
   const list = document.getElementById("missingList");
+
   list.innerHTML = "";
+  box.style.display = "none";
 
-  const classStudents = allStudents.filter(s => String(s["LƠP"]).trim() === lop);
+  if (!filtered.length) return;
 
-  const submitted = new Set(scoreData.map(s => s.stt));
-  const missing = classStudents.filter(s => !submitted.has(Number(s.STT)));
+  const maxSTT = Math.max(...filtered.map(x => x.stt));
+  const existing = new Set(filtered.map(x => x.stt));
 
-  if (missing.length === 0) {
-    missingBox.style.display = "none";
-    return;
+  let missing = [];
+  for (let i = 1; i <= maxSTT; i++) {
+    if (!existing.has(i)) missing.push(i);
   }
 
-  missingBox.style.display = "block";
+  if (!missing.length) return;
 
-  missing.forEach(s => {
+  box.style.display = "block";
+  missing.forEach(m => {
     const li = document.createElement("li");
-    li.textContent = `STT ${s.STT} — ${s.TEN}`;
+    li.textContent = "STT " + m;
     list.appendChild(li);
   });
 }
 
-loadAll();
+// -------------------- Escape HTML --------------------
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
 </script>
 
 </body>
