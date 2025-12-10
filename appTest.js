@@ -412,6 +412,7 @@ function disableInteractions(disable) {
 function setupFocusDetection(){
   if (!CONFIG.allowCheatFeatures) return;
 
+  /*
   window.addEventListener("blur", ()=>{
     focusCount++;
     $("focus-count") && ($("focus-count").innerText = focusCount);
@@ -423,7 +424,7 @@ function setupFocusDetection(){
       flashMessage(`⚠️ Cảnh báo: bạn đã rời cửa sổ nhiều lần (${focusCount}). Giáo viên sẽ được thông báo.`, 7000);
     }
   });
-
+  
   // extra: visibilitychange
   document.addEventListener("visibilitychange", ()=>{
     if (document.visibilityState === "hidden") {
@@ -432,7 +433,8 @@ function setupFocusDetection(){
       saveAutosaveDebounced();
     }
   });
-
+  */
+  
   // block some keys
   document.addEventListener("keydown", (e)=>{
     if (!CONFIG.allowCheatFeatures) return;
