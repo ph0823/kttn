@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Bảng điểm học sinh</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; background:#f8f8f8; }
     h1 { font-size: 26px; }
@@ -34,7 +36,7 @@
     }
 
     .duplicate td {
-      background: #ffe9e9;
+      background: #ffe9e9 !important;
     }
   </style>
 </head>
@@ -73,22 +75,20 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsWIrbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 const STUDENT_URL = "data/students.json";
 
 let allScores = [];
 let allStudents = [];
 let duplicateMap = {};
-let autoRefresh = null;   // bộ đếm tự cập nhật
+let autoRefresh = null;
 
-// ------------------------
-// KHỞI TẠO DANH SÁCH LỚP CỐ ĐỊNH
-// ------------------------
+// -------------------------------------
+// KHỞI TẠO DANH SÁCH LỚP
+// -------------------------------------
 function loadFixedClasses() {
   const classes = [];
-  for (let i = 1; i <= 10; i++) {
-    classes.push(`7.${i}`);
-  }
+  for (let i = 1; i <= 10; i++) classes.push(`7.${i}`);
 
   const select = document.getElementById("lopFilter");
   classes.forEach(c => {
@@ -102,10 +102,9 @@ function loadFixedClasses() {
   document.getElementById("sortFilter").onchange = applyFilters;
 }
 
-
-// ------------------------
-// TẢI DỮ LIỆU
-// ------------------------
+// -------------------------------------
+// TẢI DỮ LIỆU ĐIỂM + DANH SÁCH HỌC SINH
+// -------------------------------------
 async function loadAll() {
   try {
     const scoreRes = await fetch(API_URL, { cache: "no-store" });
@@ -123,24 +122,136 @@ async function loadAll() {
     allStudents = await stuRes.json();
 
     buildDuplicateMap();
-    applyFilters(); // cập nhật giao diện nếu đã chọn lớp
+    applyFilters(); 
+
   } catch (e) {
     console.error(e);
     alert("Không thể tải dữ liệu!");
   }
 }
 
-// ------------------------
-// Xử lý chọn lớp: bật auto refresh
-// ------------------------
+// -------------------------------------
+// Xử lý Chọn Lớp
+// -------------------------------------
 function handleClassChange() {
   const lop = document.getElementById("lopFilter").value;
 
-  // hủy auto-refresh cũ
   if (autoRefresh) clearInterval(autoRefresh);
 
   if (lop) {
-    loadAll(); 
-    autoRefresh = setInterval(loadAll, 45000); // 45 giây cập nhật
+    loadAll();
+    autoRefresh = setInterval(loadAll, 45000);
   } else {
-    document.getElementById("scoreTab
+    document.getElementById("scoreTable").style.display = "none";
+    document.getElementById("missingBox").style.display = "none";
+  }
+}
+
+// -------------------------------------
+// Lập map trùng
+// -------------------------------------
+function buildDuplicateMap() {
+  duplicateMap = {};
+  allScores.forEach(s => {
+    const key = s.ten + "_" + s.lop;
+    if (!duplicateMap[key]) duplicateMap[key] = 0;
+    duplicateMap[key]++;
+  });
+}
+
+// -------------------------------------
+// LỌC + HIỂN THỊ DỮ LIỆU
+// -------------------------------------
+function applyFilters() {
+  const lop = document.getElementById("lopFilter").value;
+  if (!lop) return;
+
+  document.getElementById("sortFilter").disabled = false;
+
+  // Học sinh trong lớp
+  const studentsInClass = allStudents.filter(s => s.lop === lop);
+
+  // Điểm học sinh trong lớp
+  let scores = allScores.filter(s => s.lop === lop);
+
+  // Lấy lần làm đầu tiên
+  const firstTry = {};
+  scores.forEach(s => {
+    const key = s.ten;
+    if (!firstTry[key]) firstTry[key] = s;
+  });
+
+  let finalScores = Object.values(firstTry);
+
+  // Sắp xếp
+  const sortType = document.getElementById("sortFilter").value;
+  finalScores.sort((a, b) => {
+    if (sortType === "score") return (a.score ?? 0) - (b.score ?? 0);
+    return a.stt - b.stt;
+  });
+
+  renderTable(finalScores);
+  renderMissing(studentsInClass, finalScores);
+}
+
+// -------------------------------------
+// HIỂN THỊ BẢNG ĐIỂM
+// -------------------------------------
+function renderTable(list) {
+  const tbody = document.querySelector("#scoreTable tbody");
+  tbody.innerHTML = "";
+
+  list.forEach(item => {
+    const tr = document.createElement("tr");
+
+    const key = item.ten + "_" + item.lop;
+    if (duplicateMap[key] > 1) tr.classList.add("duplicate");
+
+    tr.innerHTML = `
+      <td>${item.stt}</td>
+      <td>${item.ten}</td>
+      <td>${item.lop}</td>
+      <td>${item.score ?? ""}</td>
+      <td>${item.timestamp}</td>
+      <td>${duplicateMap[key] || 1}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("scoreTable").style.display = "table";
+}
+
+// -------------------------------------
+// HỌC SINH CHƯA LÀM BÀI
+// -------------------------------------
+function renderMissing(students, scored) {
+  const box = document.getElementById("missingBox");
+  const list = document.getElementById("missingList");
+  list.innerHTML = "";
+
+  const scoredNames = scored.map(s => s.ten);
+  const missing = students.filter(s => !scoredNames.includes(s.ten));
+
+  if (missing.length === 0) {
+    box.style.display = "none";
+    return;
+  }
+
+  missing.forEach(m => {
+    const li = document.createElement("li");
+    li.textContent = `${m.stt}. ${m.ten}`;
+    list.appendChild(li);
+  });
+
+  box.style.display = "block";
+}
+
+// -------------------------------------
+// KHỞI CHẠY
+// -------------------------------------
+loadFixedClasses();
+</script>
+
+</body>
+</html>
