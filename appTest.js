@@ -28,6 +28,24 @@ const CONFIG = {
   allowCheatFeatures: true // bật/tắt các tính năng chống gian lận
 };
 
+/* ================== FIX: Ensure submit button updater exists early ================== */
+function updateSubmitButton() {
+  const total = quiz.length || 0;
+  const answered = Object.keys(answers).length || 0;
+  const btn = document.getElementById("btn-submit");
+  if (!btn) return;
+
+  if (answered < total) {
+    btn.disabled = true;
+    btn.style.opacity = "0.55";
+    btn.innerText = `NỘP BÀI (${total - answered} câu còn lại)`;
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = "1";
+    btn.innerText = "NỘP BÀI";
+  }
+}
+
 /* ================== State ================== */
 let students = [];
 let questions = [];
