@@ -204,6 +204,10 @@ function showStudentDetail(stt) {
 
     html += `</div>`;
     box.innerHTML = html;
+
+    setTimeout(() => {
+        box.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
 }
 
 // -------------------------------------------------------------
