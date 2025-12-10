@@ -65,7 +65,7 @@ function loadStudents(className) {
     return;
   }
   
-  const list = students.filter(s => s.LƠP === className);
+  const list = students.filter(s => s.LƠP == className);
 
   select.innerHTML = `<option value="">-- Chọn học sinh --</option>` +
     list.map(s => `<option value="${s.STT}">${s.STT} - ${s.TEN}</option>`).join("");
