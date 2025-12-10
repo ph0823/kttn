@@ -304,8 +304,7 @@ async function submitQuiz(auto=false) {
     $("result-info").innerHTML = `
       <div style="text-align:center;padding:10px">
         <h2 style="color:#28a745">✅ Nộp bài ${serverAck ? "thành công" : "đã lưu (tạm)"}!</h2>
-        <p>Học sinh: <b>${selectedStudent.TEN}</b> - Lớp ${selectedStudent.LƠP}</p>
-        <p>Đúng: <b>${correctCount}/${quiz.length}</b> — Điểm: <b>${score}</b></p>
+        <p>Học sinh: <b>${selectedStudent.TEN}</b> - Lớp ${selectedStudent.LƠP}</p>        
         <p style="color:#666;font-style:italic">Kết quả đã được ghi nhận ${serverAck ? "trên hệ thống." : "tạm thời (vui lòng kiểm tra lại)."} </p>
       </div>
     `;
