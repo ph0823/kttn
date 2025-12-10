@@ -86,7 +86,9 @@ let autoRefresh = null;   // bộ đếm tự cập nhật
 // ------------------------
 function loadFixedClasses() {
   const classes = [];
-  for (let i = 1; i <= 11; i++) classes.push("7." + i);
+  for (let i = 1; i <= 10; i++) {
+    classes.push(`7.${i}`);
+  }
 
   const select = document.getElementById("lopFilter");
   classes.forEach(c => {
@@ -99,6 +101,7 @@ function loadFixedClasses() {
   select.onchange = handleClassChange;
   document.getElementById("sortFilter").onchange = applyFilters;
 }
+
 
 // ------------------------
 // TẢI DỮ LIỆU
