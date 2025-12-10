@@ -11,6 +11,8 @@ let quiz = [];
 let answers = {}; // Lưu đáp án dưới dạng: { "Q1": "Nội dung đáp án chọn" }
 let currentIndex = 0;
 let selectedStudent = null;
+let timeLeft = 600;     // 10 phút = 600 giây
+let timerInterval = null;
 
 // Cấu hình
 const MIN_SCORE = 5; // Điểm thấp nhất là 5
@@ -214,8 +216,25 @@ window.jumpTo = i => {
 
 
 // ------------ 6. SUBMIT (Đã cập nhật bảo mật điểm) ---------------
-async function submitQuiz() {
-  if (!confirm("Bạn chắc chắn muốn nộp bài? Kết quả sẽ không thể thay đổi.")) return;
+async function submitQuiz(auto = false) {
+
+  // ❗ Kiểm tra làm đủ câu
+  if (!auto) {
+    const total = quiz.length;
+    const answered = Object.keys(answers).length;
+
+    if (answered < total) {
+      alert(`Bạn còn ${total - answered} câu chưa làm. Vui lòng hoàn thành trước khi nộp bài!`);
+      return;
+    }
+  }
+
+  // Xác nhận khi không phải auto-submit
+  if (!auto) {
+    if (!confirm("Bạn chắc chắn muốn nộp bài?")) return;
+  }
+
+  clearInterval(timerInterval);  // Dừng đồng hồ
 
   const btnSubmit = document.getElementById("btn-submit");
   btnSubmit.disabled = true;
@@ -223,34 +242,28 @@ async function submitQuiz() {
 
   let correctCount = 0;
 
-  // Vẫn giữ logic tính điểm ngầm để gửi về hệ thống
   quiz.forEach(q => {
     const userAnswer = answers[q.id];
-    if (userAnswer) {
-      if (userAnswer === q.correct || userAnswer.startsWith(q.correct + ".")) {
-        correctCount++;
-      }
+    if (userAnswer && (userAnswer === q.correct || userAnswer.startsWith(q.correct + "."))) {
+      correctCount++;
     }
   });
 
-  let score = (correctCount / quiz.length) * 10;
-  score = Math.round(score * 100) / 100;
-  
-  if (score < MIN_SCORE) score = MIN_SCORE; 
+  let score = Math.round((correctCount / quiz.length) * 1000) / 100;
+  if (score < MIN_SCORE) score = MIN_SCORE;
 
   const payload = {
     lop: selectedStudent.LƠP,
     stt: selectedStudent.STT,
     ten: selectedStudent.TEN,
-    score: score,
-    correctCount: correctCount,
+    score,
+    correctCount,
     total: quiz.length,
     timestamp: new Date().toISOString(),
-    answers: answers
+    answers
   };
 
   try {
-    // Gửi dữ liệu đi (ẩn dưới nền)
     await fetch(GOOGLE_API, {
       method: "POST",
       mode: "no-cors",
@@ -258,29 +271,24 @@ async function submitQuiz() {
       body: JSON.stringify(payload)
     });
   } catch (err) {
-    console.error("Lỗi gửi điểm:", err);
+    console.error(err);
   }
 
-  // --- PHẦN THAY ĐỔI GIAO DIỆN ---
-  // Thay vì hiện điểm, chỉ hiện thông báo thành công
-  const resultHTML = `
-    <div style="text-align: center; padding: 10px;">
-      <h2 style="color: #28a745; margin-bottom: 15px;">✅ Nộp bài thành công!</h2>
-      <p style="font-size: 18px; line-height: 1.5;">
-        Bạn <b>${selectedStudent.TEN}</b> (Lớp ${selectedStudent.LƠP}) đã hoàn thành bài thi.
-      </p>
-      <p style="color: #666; font-style: italic; margin-top: 10px;">
-        Kết quả đã được ghi nhận vào hệ thống.
-      </p>
+  // Giao diện sau khi nộp
+  document.getElementById("result-info").innerHTML = `
+    <div style="text-align:center; padding:10px">
+      <h2 style="color:#28a745">✅ Nộp bài thành công!</h2>
+      <p>Bạn <b>${selectedStudent.TEN}</b> - Lớp ${selectedStudent.LƠP}</p>
+      <p style="color:#666; font-style:italic">Kết quả đã được ghi nhận.</p>
     </div>
   `;
 
-  document.getElementById("result-info").innerHTML = resultHTML;
   showScreen("screen-result");
-  
+
   btnSubmit.disabled = false;
   btnSubmit.innerText = "NỘP BÀI";
 }
+
 
 
 // ------------ 7. CHANGE SCREEN ---------------
@@ -289,7 +297,29 @@ function showScreen(id) {
   document.getElementById(id).classList.add("active");
 }
 
-// ------------ 8. BUTTON EVENTS ---------------
+// ------------ 8. TIMER ---------------
+function startTimer() {
+  const box = document.getElementById("timer-box");
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+
+    // xử lý định dạng mm:ss
+    let m = Math.floor(timeLeft / 60);
+    let s = timeLeft % 60;
+    box.innerText = `${m}:${s < 10 ? "0" + s : s}`;
+
+    // Hết giờ → tự động nộp bài
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      alert("⏰ Đã hết thời gian! Hệ thống sẽ tự động nộp bài.");
+      submitQuiz(true); // true = auto submit
+    }
+
+  }, 1000);
+}
+
+// ------------ 9. BUTTON EVENTS ---------------
 document.addEventListener("DOMContentLoaded", () => {
   
   // Nút Bắt đầu
@@ -304,6 +334,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     buildQuiz();
     showScreen("screen-quiz");
+
+    // 🟢 BẮT ĐẦU ĐỒNG HỒ
+    timeLeft = 600;
+    startTimer();
   };
 
   // Nút Next / Prev
