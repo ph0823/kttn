@@ -86,7 +86,7 @@
     <tr>
       <th>STT</th>
       <th>Tên học sinh</th>
-      <th>Lớp</th>
+      
       <th>Điểm</th>
       <th>Thời gian</th>
       <th>Số lần</th>
@@ -231,7 +231,7 @@ function renderTable(data) {
     tr.innerHTML = `
       <td>${row.stt}</td>
       <td>${escapeHtml(row.ten || "")}</td>
-      <td>${escapeHtml(row.lop)}</td>
+      
       <td>${row.score ?? ""}</td>
       <td>${formatTimestamp(row.timestamp)}</td>
       <td><span class="count-badge">${times}</span></td>
