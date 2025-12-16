@@ -90,7 +90,7 @@ async function loadData() {
     // chuẩn hóa id
     questions = questions.map((q,i)=>({ ...q, id: q.id || "Q"+(i+1)}));
 
-    loadClasses();
+    loadClasses(students);
     console.log("Dữ liệu đã tải.");
   } catch (err) {
     alert("Lỗi khi tải dữ liệu: " + err.message);
@@ -99,44 +99,50 @@ async function loadData() {
 }
 
 /* ================== Classes & Students ================== */
-function loadClasses() {
-  const select = $("select-class");
-  const classes = Object.keys(students).sort();
+function loadClasses(studentsData) {
+  const selectClass = $("select-class");
+  selectClass.innerHTML = `<option value="">-- Chọn lớp --</option>`;
 
-  select.innerHTML =
-    `<option value="">-- Chọn lớp --</option>` +
-    classes.map(c => `<option value="${c}">${c}</option>`).join("");
+  Object.keys(studentsData).forEach(className => {
+    const option = document.createElement("option");
+    option.value = className;   // ví dụ: "7.1"
+    option.textContent = className;
+    selectClass.appendChild(option);
+  });
 
-  select.onchange = () => {
+  
+  selectClass.onchange = () => {
     selectedStudent = null;
-    loadStudents(select.value);
+    loadStudentsByClass(studentsData, selectClass.value);
   };
 }
 
 
-function loadStudents(className) {
-  const select = $("select-student");
-  if (!className || !students[className]) {
-    select.innerHTML = "";
-    return;
-  }
+function loadStudentsByClass(studentsData, className) {
+  const selectStudent = $("select-student");
+  selectStudent.innerHTML = `<option value="">-- Chọn học sinh --</option>`;
 
-  const list = students[className];
+  if (!className || !studentsData[className]) return;
 
-  select.innerHTML =
-    `<option value="">-- Chọn học sinh --</option>` +
-    list.map(s =>
-      `<option value="${s.stt}">${s.stt} - ${s.ten}</option>`
-    ).join("");
+  studentsData[className].forEach(stu => {
+    const option = document.createElement("option");
+    option.value = stu.stt; // dùng stt để xác định duy nhất
+    option.textContent = `${stu.stt}. ${stu.ten}`;
+    selectStudent.appendChild(option);
+  });
 
-  select.onchange = () => {
-    const stt = Number(select.value);
-    selectedStudent = list.find(s => s.stt === stt);
+ 
+  selectStudent.onchange = () => {
+    const stt = Number(selectStudent.value);
+    selectedStudent = studentsData[className].find(s => s.stt === stt);
     if (selectedStudent) {
-      selectedStudent.LOP = className; // gán thêm lớp
+      selectedStudent.LOP = className;
     }
   };
 }
+
+
+
 
 
 /* ================== Build Quiz (ontap7hk1.json) ================== */
@@ -348,7 +354,7 @@ async function submitQuiz(auto=false) {
     $("result-info").innerHTML = `
       <div style="text-align:center;padding:10px">
         <h2 style="color:#28a745">✅ Nộp bài ${serverAck ? "thành công" : "đã lưu (tạm)"}!</h2>
-        <p>Học sinh: <b>${selectedStudent.TEN}</b> - Lớp ${selectedStudent.LƠP}</p>        
+        <p>Học sinh: <b>${selectedStudent.ten}</b> - Lớp ${selectedStudent.LOP}</p>        
         <p style="color:#666;font-style:italic">Kết quả đã được ghi nhận ${serverAck ? "trên hệ thống." : "tạm thời (vui lòng kiểm tra lại)."} </p>
       </div>
     `;
@@ -524,7 +530,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   // wire up buttons
   $("btn-start").onclick = ()=>{
     if (!selectedStudent) { alert("Vui lòng chọn học sinh trước khi bắt đầu!"); return; }
-    $("student-info").innerHTML = `Học sinh: <b>${selectedStudent.TEN}</b> - Lớp: ${selectedStudent.LƠP}`;
+    $("student-info").innerHTML = `Học sinh: <b>${selectedStudent.ten}</b> - Lớp: ${selectedStudent.LOP}`;
     buildQuiz();
     showScreen("screen-quiz");
     timeLeft = 600;
