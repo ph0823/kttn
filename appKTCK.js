@@ -21,7 +21,17 @@
  *   { cdD2: [ ... ] }
  *  ];
  * - data/students.json
- *
+ * {
+  "7.1": [
+    {
+      "stt": 1,
+      "ten": "Đoàn Phạm Khánh An"
+    },
+    {
+      "stt": 2,
+      "ten": "Nguyễn Mai Trâm Anh"
+    }
+  }
  * tồn tại và đúng cấu trúc.
  *
  * Nếu muốn tắt 1 tính năng (ví dụ anti-cheat), chỉnh biến config.allowCheatFeatures = true/false
@@ -84,7 +94,7 @@ async function loadData() {
     students = await studentRes.json();
 
     const questionRes = await fetch("data/ontap7hk1.json");
-    if (!questionRes.ok) throw new Error("Không tìm thấy file questions.json");
+    if (!questionRes.ok) throw new Error("Không tìm thấy file ontap7hk1.json");
     questions = await questionRes.json();
 
     // chuẩn hóa id
