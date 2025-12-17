@@ -40,7 +40,8 @@
 /* ================== Cấu hình ================== */
 const CONFIG = {
   MIN_SCORE: 5,
-  GOOGLE_API: "https://script.google.com/macros/s/AKfycbw-OjUkZcMZCs2li0JvSKYvIImRIRR58XNsOAegoQqChrIeifc8hv_e8MUuHj4vclXsLw/exec",
+  //GOOGLE_API: "https://script.google.com/macros/s/AKfycbw-OjUkZcMZCs2li0JvSKYvIImRIRR58XNsOAegoQqChrIeifc8hv_e8MUuHj4vclXsLw/exec",
+  GOOGLE_API: "/api/submit"
   AUTO_SAVE_KEY: "ktck1_2025",
   FOCUS_MAX_WARN: 5, // số lần rời tab trước khi đánh dấu nghi ngờ
   allowCheatFeatures: true // bật/tắt các tính năng chống gian lận
@@ -348,15 +349,17 @@ async function submitQuiz(auto=false) {
     serverAck = false;
 
     // Use fetch but mode no-cors may not return OK; still attempt
-    await fetch(CONFIG.GOOGLE_API, {
-      method: "POST",      
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch(CONFIG.GOOGLE_API, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(payload)
     });
 
     const data = await res.json();
     serverAck = data.status === "ok";
-    
+
   } catch (err) {
     console.error("Lỗi khi gửi:", err);
   } finally {
