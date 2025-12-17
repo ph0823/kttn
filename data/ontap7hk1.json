@@ -127,32 +127,15 @@
         "Hãy tử tế với người khác trên không gian mạng"
       ],
       "correct":3 },
+      
+      { "q":"Để sử dụng mạng xã hội an toàn, học sinh cần:", "options":["Giữ kín thông tin riêng tư","Công khai dữ liệu","Kết bạn nhiều","Dùng nhiều tài khoản"], "correct":0 },
+      { "q":"Việc học cách tránh rủi ro trên mạng giúp học sinh:", "options":["Giải trí hơn","Hạn chế rủi ro khi online","Sử dụng mạng nhiều và lâu hơn","Kết bạn nhanh"], "correct":1 },
+      { "q":"Khi nhận tin nhắn đáng ngờ, học sinh nên:", "options":["Trả lời ngay","Không phản hồi","Chia sẻ","Làm theo"], "correct":1 },
+      { "q":"Khi bị bắt nạt trên mạng, học sinh nên:", "options":["Đăng phản đối","Trả đũa","Im lặng","Báo người lớn"], "correct":3 },
+      { "q":"Thông tin nào không nên chia sẻ trên mạng xã hội?", "options":["Sở thích","Ảnh phong cảnh","Hoạt động học tập","Thông tin cá nhân"], "correct":3 },
+      
       {
-      "q":"Hành vi sống ảo, lạm dụng quá nhiều các giao tiếp trực tuyến và mạng xã hội có thể dẫn đến hậu quả gì?",
-      "options":[
-        "Cải thiện kỹ năng giao tiếp xã hội",
-        "Giúp tìm kiếm thông tin hiệu quả hơn",
-        "Ảnh hưởng đến học tập và làm việc",
-        "Tôn trọng quyền riêng tư của người khác"
-      ],
-      "correct":2 }
-    
-  ]
-},
-{
-  "cdD2": [
-    { "q":"Để sử dụng mạng xã hội an toàn, học sinh cần:", "options":["Giữ kín thông tin riêng tư","Công khai dữ liệu","Kết bạn nhiều","Dùng nhiều tài khoản"], "correct":0 },
-    
-    { "q":"Việc học cách tránh rủi ro trên mạng giúp học sinh:", "options":["Giải trí hơn","Hạn chế rủi ro khi online","Sử dụng mạng nhiều và lâu hơn","Kết bạn nhanh"], "correct":1 },
-    { "q":"Khi nhận tin nhắn đáng ngờ, học sinh nên:", "options":["Trả lời ngay","Không phản hồi","Chia sẻ","Làm theo"], "correct":1 },
-    
-    { "q":"Khi bị bắt nạt trên mạng, học sinh nên:", "options":["Đăng phản đối","Trả đũa","Im lặng","Báo người lớn"], "correct":3 },
-    
-    { "q":"Thông tin nào không nên chia sẻ trên mạng xã hội?", "options":["Sở thích","Ảnh phong cảnh","Hoạt động học tập","Thông tin cá nhân"], "correct":3 },
-    
-    
-    {
-      "q":"Dấu hiệu nào sau đây cho thấy nguy cơ lừa đảo trên mạng?",
+      "q":"Dấu hiệu nào sau đây cho thấy bạn có nguy cơ bị lừa đảo trên mạng?",
       "options":[
         "Trang thông tin chính thức của nhà trường",
         "Thông báo học tập từ giáo viên",
@@ -161,6 +144,43 @@
       ],
       "correct":3
     },
+    
+
+      {
+      "q":"Hành vi sống ảo, lạm dụng quá nhiều các giao tiếp trực tuyến và mạng xã hội có thể dẫn đến hậu quả gì?",
+      "options":[
+        "Cải thiện kỹ năng giao tiếp xã hội",
+        "Giúp tìm kiếm thông tin hiệu quả hơn",
+        "Ảnh hưởng đến học tập và làm việc",
+        "Tôn trọng quyền riêng tư của người khác"
+      ],
+      "correct":2 }    
+  ]
+},
+
+{
+  "cdD2": [   
+    {
+      "q":"Đâu không phải là biện pháp phòng ngừa tác hại khi tham gia internet?",
+      "options":[
+        "Vào mạng xã hội thâu đêm suốt sáng.",
+        "Không mở email từ địa chỉ lạ",
+        "Không truy cập trang web không lành mạnh",
+        "Tự suy nghĩ thay vì lập tức tìm sự trở giúp của Internet"
+      ],
+      "correct":0
+    },
+    {
+      "q":"Theo em, thế nào là “ăn cắp trên không gian mạng”.",
+      "options":[
+        "Tra tìm một câu nói nổi tiếng mà không nhớ được nguyên văn",
+        "Chép lại bài thơ mà không ghi tên tác giả hay nguồn gốc bài thơ đó",
+        "Không truy cập trang web không lành mạnh",
+        "Lấy hình logo, biểu tượng của trường khi trình bày giới thiệu về trường đó"
+      ],
+      "correct":1
+    },
+
     {
       "q":"Khi nhận được đường link lạ từ người không quen biết, học sinh nên làm gì?",
       "options":[
@@ -172,25 +192,16 @@
       "correct":2
     },
     {
-      "q":"Hành động nào giúp bảo vệ tài khoản cá nhân trên mạng?",
+      "q":"Hành động nào không giúp bảo vệ tài khoản cá nhân trên mạng?",
       "options":[
         "Chia sẻ mật khẩu cho bạn thân",
-        "Đặt mật khẩu dễ nhớ như ngày sinh",
-        "Sử dụng mật khẩu mạnh và không chia sẻ",
-        "Ghi mật khẩu ra giấy và dán lên bàn"
+        "Đặt mật khẩu dài khó nhớ",
+        "Sử dụng mật khẩu mạnh và không chịu chia sẻ",
+        "Không nhờ bạn thân đặt mật khẩu giùm"
       ],
-      "correct":2
+      "correct":0
     },
-    {
-      "q":"Khi phát hiện tài khoản có dấu hiệu bị xâm nhập, người dùng nên",
-      "options":[
-        "Chia sẻ ngay mật khẩu cho bạn thân",
-        "Đổi mật khẩu ngay",
-        "Đăng bài cảnh cáo vu vơ",
-        "Ghi mật khẩu ra giấy và dán lên bàn"
-      ],
-      "correct":1
-    },
+    
     {
       "q":"Khi phát hiện thông tin cá nhân của mình bị đăng trái phép trên mạng, học sinh nên:",
       "options":[
