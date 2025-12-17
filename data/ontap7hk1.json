@@ -3,9 +3,45 @@
     { "q":"Thiết bị nào sau đây là thiết bị vào của máy tính?", "options":["Máy chiếu, loa","Chuột, bàn phím","Loa, tai nghe","Màn hình, máy in"], "correct":1 },
     { "q":"Thiết bị nào sau đây là thiết bị vào của máy tính?", "options":["Chuột, micro","Loa, tai nghe","Máy chiếu, máy in","Màn hình, tivi"], "correct":0 },
     { "q":"Thiết bị nào sau đây là thiết bị ra của máy tính?", "options":["Loa","Webcam","Bàn phím","Chuột"], "correct":0 },
+    { "q":"Thiết bị nào sau đây dùng để nhập hình ảnh vào máy tính?",
+      "options":[
+        "Máy in",
+        "webcam",
+        "Máy chiếu",
+        "Tivi"
+      ],
+      "correct":1
+    },
     
-    { "q":"Hệ điều hành là phần mềm có chức năng:", "options":["Nghe nhạc","Soạn thảo văn bản","Vẽ hình","Quản lí và điều khiển máy tính"], "correct":3 },
-
+    { "q":"Hệ điều hành là phần mềm có chức năng:", 
+      "options":["Nghe nhạc","Soạn thảo văn bản","Vẽ hình","Quản lí và điều khiển máy tính"], "correct":3 },
+    { "q":"Một trong các chức năng của hệ điều hành là:",
+      "options":[
+        "Lập trình game",
+        "Quản lí thiết bị phần cứng",
+        "Thiết kế đồ họa",
+        "Nghe nhạc"
+      ],
+      "correct":1
+    },
+    { "q":"Trong hệ điều hành, thư mục là nơi dùng để:",
+      "options":[
+        "Lưu chương trình",
+        "Chứa các tệp và thư mục khác",
+        "Xử lí dữ liệu",
+        "Khởi động máy tính"
+      ],
+      "correct":1
+    },
+    { "q":"Tên tệp trong máy tính dùng để:",
+      "options":[
+        "Phân biệt các tệp với nhau",
+        "Giảm dung lượng lưu trữ",
+        "Tăng tốc máy tính",
+        "Bảo vệ dữ liệu"
+      ],
+      "correct":0
+    },
     { "q":"Trong Windows, trình quản lí hệ thống tệp là:", "options":["Word","PowerPoint","Excel","File Explorer"], "correct":3 },
     { "q":"Giữa phần tên và phần mở rộng của tệp được phân cách bởi:", "options":["Dấu hai chấm","Dấu sao","Dấu chấm","Dấu phẩy"], "correct":2 },     
     { "q":"Phần mở rộng của tên tệp thường thể hiện:", "options":["Ngày tạo","Kiểu tệp","Kích thước","Thư mục chứa"], "correct":1 }, 
@@ -127,25 +163,6 @@
         "Hãy tử tế với người khác trên không gian mạng"
       ],
       "correct":3 },
-      
-      { "q":"Để sử dụng mạng xã hội an toàn, học sinh cần:", "options":["Giữ kín thông tin riêng tư","Công khai dữ liệu","Kết bạn nhiều","Dùng nhiều tài khoản"], "correct":0 },
-      { "q":"Việc học cách tránh rủi ro trên mạng giúp học sinh:", "options":["Giải trí hơn","Hạn chế rủi ro khi online","Sử dụng mạng nhiều và lâu hơn","Kết bạn nhanh"], "correct":1 },
-      { "q":"Khi nhận tin nhắn đáng ngờ, học sinh nên:", "options":["Trả lời ngay","Không phản hồi","Chia sẻ","Làm theo"], "correct":1 },
-      { "q":"Khi bị bắt nạt trên mạng, học sinh nên:", "options":["Đăng phản đối","Trả đũa","Im lặng","Báo người lớn"], "correct":3 },
-      { "q":"Thông tin nào không nên chia sẻ trên mạng xã hội?", "options":["Sở thích","Ảnh phong cảnh","Hoạt động học tập","Thông tin cá nhân"], "correct":3 },
-      
-      {
-      "q":"Dấu hiệu nào sau đây cho thấy bạn có nguy cơ bị lừa đảo trên mạng?",
-      "options":[
-        "Trang thông tin chính thức của nhà trường",
-        "Thông báo học tập từ giáo viên",
-        "Tin nhắn thông báo hẹn gặp trước cổng trường",
-        "Yêu cầu cung cấp mật khẩu hoặc mã xác thực cá nhân"
-      ],
-      "correct":3
-    },
-    
-
       {
       "q":"Hành vi sống ảo, lạm dụng quá nhiều các giao tiếp trực tuyến và mạng xã hội có thể dẫn đến hậu quả gì?",
       "options":[
@@ -154,33 +171,28 @@
         "Ảnh hưởng đến học tập và làm việc",
         "Tôn trọng quyền riêng tư của người khác"
       ],
-      "correct":2 }    
+      "correct":2 }
+    
   ]
 },
-
 {
-  "cdD2": [   
-    {
-      "q":"Đâu không phải là biện pháp phòng ngừa tác hại khi tham gia internet?",
-      "options":[
-        "Vào mạng xã hội thâu đêm suốt sáng.",
-        "Không mở email từ địa chỉ lạ",
-        "Không truy cập trang web không lành mạnh",
-        "Tự suy nghĩ thay vì lập tức tìm sự trở giúp của Internet"
-      ],
-      "correct":0
-    },
-    {
-      "q":"Theo em, thế nào là “ăn cắp trên không gian mạng”.",
-      "options":[
-        "Tra tìm một câu nói nổi tiếng mà không nhớ được nguyên văn",
-        "Chép lại bài thơ mà không ghi tên tác giả hay nguồn gốc bài thơ đó",
-        "Không truy cập trang web không lành mạnh",
-        "Lấy hình logo, biểu tượng của trường khi trình bày giới thiệu về trường đó"
-      ],
-      "correct":1
-    },
+  "cdD2": [
+    { "q":"Để sử dụng mạng xã hội an toàn, học sinh cần:", "options":["Giữ kín thông tin riêng tư","Công khai dữ liệu","Kết bạn nhiều","Dùng nhiều tài khoản"], "correct":0 },
+    { "q":"Việc học cách tránh rủi ro trên mạng giúp học sinh:", "options":["Giải trí hơn","Hạn chế rủi ro khi online","Sử dụng mạng nhiều và lâu hơn","Kết bạn nhanh"], "correct":1 },
+    { "q":"Khi nhận tin nhắn đáng ngờ, học sinh nên:", "options":["Trả lời ngay","Không phản hồi","Chia sẻ","Làm theo"], "correct":1 },
+    { "q":"Khi bị bắt nạt trên mạng, học sinh nên:", "options":["Đăng phản đối","Trả đũa","Im lặng","Báo người lớn"], "correct":3 },
+    { "q":"Thông tin nào không nên chia sẻ trên mạng xã hội?", "options":["Sở thích","Ảnh phong cảnh","Hoạt động học tập","Thông tin cá nhân"], "correct":3 },
 
+    {
+      "q":"Dấu hiệu nào sau đây cho thấy nguy cơ lừa đảo trên mạng?",
+      "options":[
+        "Trang thông tin chính thức của nhà trường",
+        "Thông báo học tập từ giáo viên",
+        "Tin nhắn thông báo hẹn gặp trước cổng trường",
+        "Yêu cầu cung cấp mật khẩu hoặc mã xác thực cá nhân"
+      ],
+      "correct":3
+    },
     {
       "q":"Khi nhận được đường link lạ từ người không quen biết, học sinh nên làm gì?",
       "options":[
@@ -192,16 +204,15 @@
       "correct":2
     },
     {
-      "q":"Hành động nào không giúp bảo vệ tài khoản cá nhân trên mạng?",
+      "q":"Hành động nào giúp bảo vệ tài khoản cá nhân trên mạng?",
       "options":[
         "Chia sẻ mật khẩu cho bạn thân",
-        "Đặt mật khẩu dài khó nhớ",
-        "Sử dụng mật khẩu mạnh và không chịu chia sẻ",
-        "Không nhờ bạn thân đặt mật khẩu giùm"
+        "Đặt mật khẩu dễ nhớ như ngày sinh",
+        "Sử dụng mật khẩu mạnh và không chia sẻ",
+        "Ghi mật khẩu ra giấy và dán lên bàn"
       ],
-      "correct":0
+      "correct":2
     },
-    
     {
       "q":"Khi phát hiện thông tin cá nhân của mình bị đăng trái phép trên mạng, học sinh nên:",
       "options":[
@@ -211,6 +222,61 @@
         "Đăng lại thông tin đó"
       ],
       "correct":1
-    }]
-}
+    },
+    {
+      "q":"Khi phát hiện tài khoản có dấu hiệu bị xâm nhập, người dùng nên",
+      "options":[
+        "Chia sẻ ngay mật khẩu cho bạn thân",
+        "Đổi mật khẩu ngay",
+        "Đăng bài cảnh cáo vu vơ",
+        "Ghi mật khẩu ra giấy và dán lên bàn"
+      ],
+      "correct":1
+    },
+
+    { "q":"Khi tham gia nhóm học tập trực tuyến, học sinh nên làm gì để giữ sự tôn trọng?", 
+      "options":[
+        "Đăng bài ngoài chủ đề",
+        "Lắng nghe và trao đổi đúng nội dung",
+        "Chế giễu bạn bè trong nhóm",
+        "Gửi tin nhắn spam"], "correct":1 } 
+    
+    
+    ]
+},
+{
+  "HSGioi": [
+    
+    { "q":"Khi tham gia lớp học online, hành vi nào thể hiện ứng xử có văn hóa?", 
+      "options":[
+        "Tắt micro khi không phát biểu","Nói chen ngang liên tục",
+        "Gửi tin nhắn không liên quan","Chia sẻ tài liệu sai lệch"], "correct":0 }, 
+    { "q":"Trong giao tiếp qua email, cách viết văn hóa là:", 
+      "options":[
+        "Viết tiêu đề rõ ràng, nội dung lịch sự","Viết toàn chữ in hoa để gây chú ý",
+        "Không chào hỏi, vào thẳng vấn đề","Gửi email rỗng nhiều lần"], "correct":0 }, 
+    { "q":"Khi tham gia diễn đàn, mạng xã hội, học sinh nên:", 
+      "options":[
+        "Đăng thông tin chính xác, hữu ích","Đăng tin giả để gây cười",
+        "Chế giễu ý kiến khác biệt","Viết bình luận xúc phạm"], "correct":0 }, 
+    { "q":"Để tránh bị mất tài khoản, theo em học sinh nên:", 
+      "options":[
+        "Đăng nhập bằng máy tính công cộng và lưu mật khẩu",
+        "Đăng nhập bằng thiết bị cá nhân và thoát sau khi dùng",
+        "Chia sẻ mật khẩu với bạn bè thân","Dùng mật khẩu đơn giản như '123456'"], 
+        "correct":1 },
+
+    { "q":"Hành động nào giúp tránh rủi ro khi tham gia mạng xã hội?", 
+      "options":[
+        "Kiểm soát danh sách bạn bè, chỉ kết nối với người quen",
+        "Kết bạn với tất cả mọi người","Chia sẻ thông tin cá nhân công khai",
+        "Đăng nhập bằng tài khoản của người khác"], "correct":0 }, 
+    { "q":"Khi nhận được email quảng cáo đáng ngờ, học sinh nên:", 
+      "options":[
+        "Mở ngay và làm theo hướng dẫn",
+        "Chuyển tiếp cho nhiều người khác",
+        "Xóa hoặc đánh dấu là thư rác",
+        "Trả lời để hỏi thêm thông tin"], "correct":2 }
+
+  ]}
 ]

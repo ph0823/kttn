@@ -47,7 +47,7 @@ const CONFIG = {
   allowCheatFeatures: true // bật/tắt các tính năng chống gian lận
 };
 
-/* ================== FIX: Ensure submit button updater exists early ================== */
+/* ================== FIX: Ensure submit button updater exists early ================== 
 function updateSubmitButton() {
   const total = quiz.length || 0;
   const answered = Object.keys(answers).length || 0;
@@ -64,6 +64,7 @@ function updateSubmitButton() {
     btn.innerText = "NỘP BÀI";
   }
 }
+*/
 
 /* ================== State ================== */
 let students = [];
@@ -94,7 +95,7 @@ async function loadData() {
     if (!studentRes.ok) throw new Error("Không tìm thấy file students.json");
     students = await studentRes.json();
 
-    const questionRes = await fetch("data/ontap7hk1.json");
+    const questionRes = await fetch("data/ontap7hk1_with_id.json");
     if (!questionRes.ok) throw new Error("Không tìm thấy file ontap7hk1.json");
     questions = await questionRes.json();
 
@@ -159,7 +160,7 @@ function loadStudentsByClass(studentsData, className) {
 /* ================== Build Quiz (ontap7hk1.json) ================== */
 /* ================== Build Quiz (random mỗi lần chạy) ================== */
 function buildQuiz() {
-  const bank = { cdA: [], cdC: [], cdD1: [], cdD2: [] };
+  const bank = { cdA: [], cdC: [], cdD1: [], cdD2: [], HSGioi: [] };
 
   // gom câu hỏi từ ontap7hk1.json
   questions.forEach(obj => {
@@ -173,9 +174,10 @@ function buildQuiz() {
   // tỉ lệ câu hỏi
   const RATIO = {
     cdA: 7,
-    cdC: 4,
-    cdD1: 4,
-    cdD2: 5
+    cdC: 3,
+    cdD1: 3,
+    cdD2: 4,
+    HSGioi: 3
   };
 
   let selectedQuestions = [];
@@ -186,7 +188,7 @@ function buildQuiz() {
     selectedQuestions.push(
       ...picked.map((q, i) => ({
         ...q,
-        id: `${k}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+        id: q.id,
         group: k
       }))
     );
@@ -295,8 +297,13 @@ function updateOverviewStatus() {
   });
 }
 
-/* ================== Submit ================== */
+/* ================== Submit ================== 
 async function submitQuiz(auto=false) {
+  if (!selectedStudent) {
+    alert("Lỗi: chưa xác định học sinh.");
+    return;
+  }
+
   if (submitRunning) return;
   // check complete unless auto
   if (!auto) {
@@ -325,7 +332,10 @@ async function submitQuiz(auto=false) {
   quiz.forEach(q=>{
     const ua = answers[q.id];
     // compare label or full string
-    if (ua && (ua === q.correct || ua.startsWith(q.correct + "."))) correctCount++;
+
+    const userLabel = ua?.split(".")[0];
+    if (userLabel === q.correct) correctCount++;
+
   });
 
   let score = Math.round((correctCount / quiz.length) * 1000) / 100;
@@ -377,7 +387,8 @@ async function submitQuiz(auto=false) {
     `;
 
     submitRunning = false;
-    disableInteractions(false);
+    if (!serverAck) disableInteractions(false);
+
     showScreen("screen-result");
     // clear autosave
     clearAutosave();
@@ -385,6 +396,130 @@ async function submitQuiz(auto=false) {
     btn.innerText = "NỘP BÀI";
   }
 }
+*/
+/* ================== submitQuiz ================================== */
+async function submitQuiz(auto = false) {
+  // ===== Guard =====
+  if (!selectedStudent) {
+    alert("Lỗi: chưa xác định học sinh.");
+    return;
+  }
+  if (submitRunning) return;
+
+  // ===== Check hoàn thành (trừ auto submit) =====
+  if (!auto) {
+    const total = quiz.length;
+    const answered = Object.keys(answers).length;
+    if (answered < total) {
+      alert(`Bạn còn ${total - answered} câu chưa làm. Vui lòng hoàn thành trước khi nộp bài!`);
+      return;
+    }
+    if (!confirm("Bạn chắc chắn muốn nộp bài?")) return;
+  }
+
+  submitRunning = true;
+  clearInterval(timerInterval);
+  disableInteractions(true);
+
+  const btn = $("btn-submit");
+  btn.disabled = true;
+  btn.innerText = "Đang nộp...";
+
+  // ===== Tính điểm + lọc câu sai =====
+  let correctCount = 0;
+  const wrongAnswers = [];
+
+  quiz.forEach(q => {
+    const userAns = answers[q.id];
+    const userLabel = userAns?.split(".")[0];
+
+    if (userLabel === q.correct) {
+      correctCount++;
+    } else {
+      wrongAnswers.push({
+        questionId: q.id,
+        question: q.q,
+
+        correctAnswer: q.options.find(
+          opt => opt.startsWith(q.correct + ".")
+        ),
+
+        userAnswer: userAns || null
+      });
+    }
+  });
+
+  let score = Math.round((correctCount / quiz.length) * 1000) / 100;
+  if (score < CONFIG.MIN_SCORE) score = CONFIG.MIN_SCORE;
+
+  // ===== Payload gửi server =====
+  const payload = {
+    lop: selectedStudent.LOP,
+    stt: selectedStudent.stt,
+    ten: selectedStudent.ten,
+
+    score,
+    correctCount,
+    total: quiz.length,
+
+    wrongCount: wrongAnswers.length,
+    wrongAnswers,        // ⭐ CHỈ lưu câu SAI
+
+    focusCount,
+    timestamp: new Date().toISOString()
+  };
+
+  // ===== Gửi dữ liệu =====
+  try {
+    serverAck = false;
+
+    const res = await fetch(CONFIG.GOOGLE_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    serverAck = data?.status === "ok";
+    if (serverAck) {
+      clearAutosave(); // CHỈ xóa khi chắc chắn server đã nhận
+    }
+
+  } catch (err) {
+    console.error("Lỗi khi gửi bài:", err);
+    alert("Không thể kết nối với máy chủ. Vui lòng không tắt trình duyệt và báo giáo viên!");
+  } finally {
+    // ===== Màn hình kết quả (KHÔNG HIỂN THỊ CÂU SAI) =====
+    $("result-info").innerHTML = `
+      <div class="submit-success-box">
+        <h2 style="color:${serverAck ? "#28a745" : "#dc3545"}">
+          ${serverAck
+            ? "✅ Nộp bài thành công!"
+            : "❌ Nộp bài không thành công – vui lòng báo giáo viên"}
+        </h2>
+        <p>Học sinh: <b>${selectedStudent.ten}</b> – Lớp ${selectedStudent.LOP}</p>
+        <p>Số câu đúng: <b>${correctCount}/${quiz.length}</b></p>
+        <p>Điểm: <b>${score}</b></p>
+        <p style="color:#666;font-style:italic">
+          Kết quả sẽ được xem lại sau theo quy định của giáo viên.
+        </p>
+      </div>
+    `;
+
+    showScreen("screen-result");
+    submitRunning = false;
+
+    // Nếu nộp thất bại (serverAck = false), nút nộp bài sẽ được mở lại qua disableInteractions(false)
+    if (!serverAck) disableInteractions(false);
+
+    
+    //clearAutosave();
+
+    btn.disabled = false;
+    btn.innerText = "NỘP BÀI";
+  }
+}
+
 
 /* ================== Screen ================== */
 function showScreen(id){
@@ -547,6 +682,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
   // wire up buttons
   $("btn-start").onclick = ()=>{
     if (!selectedStudent) { alert("Vui lòng chọn học sinh trước khi bắt đầu!"); return; }
+
     $("student-info").innerHTML = `Học sinh: <b>${selectedStudent.ten}</b> - Lớp: ${selectedStudent.LOP}`;
     buildQuiz();
     showScreen("screen-quiz");
