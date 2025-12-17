@@ -1,29 +1,23 @@
-// chiTiet.js - Đã sửa để khớp với appKTCK.js
-let questionsBank = []; // Lưu danh sách câu hỏi đã phẳng hóa
+// chiTiet.js - Tối ưu cho appKTCK.js và Google Sheets của bạn
+let questionsBank = []; 
 let submissions = [];
 let filteredFirstTime = []; 
 
 const GOOGLE_API = "https://script.google.com/macros/s/AKfycbyAFbKjEZlA0RmAChAsHWirbeWAK7RwzBNYEAQb4O4tLytTOjoAevXlhDNA3ANtwDcN/exec";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    await loadQuestions(); // Đợi tải câu hỏi xong mới tải API
+    // 1. Tải ngân hàng câu hỏi trước
+    await loadQuestions(); 
+    // 2. Tải dữ liệu từ Google Sheet
     loadApiData();
 });
 
-// Hàm chuẩn hóa để so sánh nội dung đáp án
-function cleanAnswer(text) {
-    if (!text) return "";
-    // Loại bỏ phần "A. ", "B. " ở đầu để so sánh nội dung thuần
-    return text.replace(/^[A-D]\.\s*/i, "").trim();
-}
-
-// 1. Tải và PHẲNG HÓA câu hỏi từ cấu trúc file JSON mới
+// Phẳng hóa dữ liệu câu hỏi từ cấu trúc [{cdA:[]}, {cdC:[]}, ...]
 async function loadQuestions() {
     try {
         const res = await fetch("data/ontap7hk1_with_id.json");
         const data = await res.json();
         
-        // Chuyển cấu trúc [{cdA:[]}, {cdC:[]}] thành [q1, q2, q3...]
         questionsBank = [];
         data.forEach(topicObj => {
             Object.values(topicObj).forEach(qList => {
@@ -32,13 +26,12 @@ async function loadQuestions() {
                 }
             });
         });
-        console.log("Đã tải ngân hàng câu hỏi:", questionsBank.length);
+        console.log("Ngân hàng câu hỏi sẵn sàng:", questionsBank.length);
     } catch (err) {
         console.error("Lỗi tải câu hỏi:", err);
     }
 }
 
-// 2. Tải dữ liệu từ Google Sheet
 async function loadApiData() {
     try {
         const res = await fetch(GOOGLE_API);
@@ -46,26 +39,27 @@ async function loadApiData() {
         loadClassList();
     } catch (err) {
         console.error(err);
-        alert("❌ Không thể tải dữ liệu từ Google Sheet!");
+        alert("❌ Lỗi kết nối API Google Sheets!");
     }
 }
 
 function loadClassList() {
     const select = document.getElementById("select-class");
+    // Lấy danh sách lớp duy nhất
     const classes = [...new Set(submissions.map(s => s.lop))].sort();
     select.innerHTML = `<option value="">-- Chọn lớp --</option>` +
         classes.map(c => `<option value="${c}">${c}</option>`).join("");
     select.onchange = () => processClass(select.value);
 }
 
-// 3. Xử lý lọc bài làm lần đầu
 function processClass(lop) {
     const tableArea = document.getElementById("result-area");
     if (!lop) return;
     
-    tableArea.innerHTML = "<p>Đang xử lý...</p>";
+    tableArea.innerHTML = "<p>Đang xử lý dữ liệu lớp " + lop + "...</p>";
+    
+    // Lọc theo lớp và lấy bài làm lần đầu của mỗi học sinh (theo STT)
     const classSubs = submissions.filter(s => String(s.lop) === String(lop));
-
     const map = {};
     classSubs.forEach(s => {
         if (!map[s.stt]) map[s.stt] = [];
@@ -75,7 +69,7 @@ function processClass(lop) {
     filteredFirstTime = [];
     Object.keys(map).forEach(stt => {
         const list = map[stt];
-        // Lấy bài nộp sớm nhất dựa trên timestamp
+        // Sắp xếp theo timestamp để lấy bài đầu tiên
         const first = list.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
         filteredFirstTime.push(first);
     });
@@ -85,69 +79,55 @@ function processClass(lop) {
 }
 
 function renderTable(list, lop) {
-    let html = `<h3>Danh sách học sinh lớp ${lop} (Lần nộp đầu)</h3>
-        <table border="1" style="border-collapse: collapse; width:100%; background:white;">
-            <tr style="background:#eee">
-                <th>STT</th><th>Tên</th><th>Điểm</th><th>Số câu đúng</th><th>Chi tiết</th>
+    let html = `<h3>Kết quả lớp ${lop} (Nộp lần đầu)</h3>
+        <table border="1" style="border-collapse: collapse; width:100%; background:white; text-align:left;">
+            <tr style="background:#f2f2f2">
+                <th style="padding:8px">STT</th>
+                <th style="padding:8px">Họ và Tên</th>
+                <th style="padding:8px">Điểm</th>
+                <th style="padding:8px">Rời tab</th>
+                <th style="padding:8px">Hành động</th>
             </tr>`;
 
     list.forEach(s => {
         html += `<tr>
-            <td>${s.stt}</td>
-            <td>${s.ten}</td>
-            <td style="font-weight:bold">${s.score}</td>
-            <td>${s.correctCount}/${s.total || 20}</td>
-            <td><button onclick="showStudentDetail('${s.stt}')">Xem câu sai</button></td>
+            <td style="padding:8px">${s.stt}</td>
+            <td style="padding:8px">${s.ten}</td>
+            <td style="padding:8px; font-weight:bold; color:${s.score >= 5 ? 'green' : 'red'}">${s.score}</td>
+            <td style="padding:8px">${s.focusCount || 0}</td>
+            <td style="padding:8px"><button onclick="showStudentDetail('${s.stt}')">Xem câu sai</button></td>
         </tr>`;
     });
-    html += "</table><div id="detail-box"></div>";
+    html += "</table><div id='detail-box' style='margin-top:20px'></div>";
     document.getElementById("result-area").innerHTML = html;
 }
 
-// 4. Hiển thị chi tiết (Sửa để khớp với field 'answers' từ appKTCK.js)
 function showStudentDetail(stt) {
     const student = filteredFirstTime.find(s => String(s.stt) === String(stt));
     const box = document.getElementById("detail-box");
     if (!student) return;
 
-    let userAnswers = {};
+    let wrongList = [];
     try {
-        // appKTCK.js gửi qua field 'answers', tùy vào Google Script bạn đặt tên cột là gì
-        // Nếu script trả về 'answers', dùng student.answers. Nếu là 'details', dùng student.details
-        userAnswers = typeof student.answers === 'string' ? JSON.parse(student.answers) : student.answers;
-    } catch (e) { console.error("Lỗi parse đáp án"); }
+        // Bây giờ student.answers thực chất chứa mảng wrongAnswers từ Sheet
+        wrongList = typeof student.answers === 'string' ? JSON.parse(student.answers) : student.answers;
+    } catch (e) { wrongList = []; }
 
-    let html = `<div style="margin-top:20px; padding:15px; border:1px solid #007bff; border-radius:8px;">
-        <h4>Chi tiết câu sai của: ${student.ten}</h4>`;
+    let html = `<div style="padding:15px; border:2px solid #ff4d4d; border-radius:8px; background:#fff;">
+        <h4>Chi tiết câu sai: ${student.ten}</h4><hr>`;
 
-    let wrongCount = 0;
-    
-    // Lặp qua danh sách câu hỏi trong ngân hàng để kiểm tra bài làm
-    // Vì appKTCK.js trộn câu hỏi, ta phải tìm câu hỏi theo ID
-    questionsBank.forEach(q => {
-        const studentChoice = userAnswers[q.id]; // Lấy đáp án HS chọn cho ID này
-        if (!studentChoice) return;
-
-        // Tìm nội dung đáp án đúng dựa vào label (0, 1, 2, 3)
-        const correctLabel = ["A", "B", "C", "D"][q.correct];
-        const correctText = q.options[q.correct];
-
-        // So sánh: Lấy ký tự đầu (A/B/C/D) từ đáp án học sinh chọn
-        const studentLabel = studentChoice.trim().charAt(0).toUpperCase();
-
-        if (studentLabel !== correctLabel) {
-            wrongCount++;
-            html += `<div style="margin-bottom:10px; border-bottom:1px dashed #ccc; padding-bottom:5px;">
-                <p><b>Câu ${q.id}:</b> ${q.q}</p>
-                <p style="color:red">HS chọn: ${studentChoice}</p>
-                <p style="color:green">Đáp án đúng: ${correctLabel}. ${correctText}</p>
+    if (wrongList.length === 0) {
+        html += "<p style='color:green'>Học sinh này không sai câu nào!</p>";
+    } else {
+        wrongList.forEach(item => {
+            html += `<div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+                <p><b>Câu:</b> ${item.question}</p>
+                <p style="color:red"><b>HS chọn:</b> ${item.userAnswer || "Không trả lời"}</p>
+                <p style="color:green"><b>Đáp án đúng:</b> ${item.correctAnswer}</p>
             </div>`;
-        }
-    });
-
-    if (wrongCount === 0) html += "<p>Học sinh này làm đúng hết!</p>";
+        });
+    }
     
-    html += `</div>`;
     box.innerHTML = html;
     box.scrollIntoView({ behavior: "smooth" });
 }

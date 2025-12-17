@@ -457,14 +457,11 @@ async function submitQuiz(auto = false) {
     lop: selectedStudent.LOP,
     stt: selectedStudent.stt,
     ten: selectedStudent.ten,
-
     score,
     correctCount,
     total: quiz.length,
-
     wrongCount: wrongAnswers.length,
-    wrongAnswers,        // ⭐ CHỈ lưu câu SAI
-
+    wrongAnswers,        // ⭐ CHỈ lưu câu SAI questionId, question, correctAnswer, userAnswer
     focusCount,
     timestamp: new Date().toISOString()
   };
@@ -498,8 +495,7 @@ async function submitQuiz(auto = false) {
             : "❌ Nộp bài không thành công – vui lòng báo giáo viên"}
         </h2>
         <p>Học sinh: <b>${selectedStudent.ten}</b> – Lớp ${selectedStudent.LOP}</p>
-        <p>Số câu đúng: <b>${correctCount}/${quiz.length}</b></p>
-        <p>Điểm: <b>${score}</b></p>
+        
         <p style="color:#666;font-style:italic">
           Kết quả sẽ được xem lại sau theo quy định của giáo viên.
         </p>
