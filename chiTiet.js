@@ -111,25 +111,34 @@ function renderTable(list, lop) {
 function showStudentDetail(stt) {
     const student = filteredFirstTime.find(s => String(s.stt) === String(stt));
     const box = document.getElementById("detail-box");
+    
+    // Kiểm tra nếu không tìm thấy học sinh
     if (!student) return;
 
     let wrongList = [];
     try {
-        // Bây giờ student.answers thực chất chứa mảng wrongAnswers từ Sheet
-        wrongList = typeof student.answers === 'string' ? JSON.parse(student.answers) : student.answers;
-    } catch (e) { wrongList = []; }
+        // Thay đổi student.answers thành student.details để khớp với cột Google Sheet
+        let rawData = student.details; 
+        
+        // Chuyển đổi chuỗi JSON sang mảng, đảm bảo trả về mảng rỗng nếu dữ liệu lỗi
+        wrongList = typeof rawData === 'string' ? JSON.parse(rawData) : (rawData || []);
+    } catch (e) { 
+        console.error("Lỗi khi parse cột details:", e);
+        wrongList = []; 
+    }
 
     let html = `<div style="padding:15px; border:2px solid #ff4d4d; border-radius:8px; background:#fff;">
         <h4>Chi tiết câu sai: ${student.ten}</h4><hr>`;
 
-    if (wrongList.length === 0) {
-        html += "<p style='color:green'>Học sinh này không sai câu nào!</p>";
+    // Kiểm tra an toàn biến wrongList phải là mảng trước khi đọc .length
+    if (!Array.isArray(wrongList) || wrongList.length === 0) {
+        html += "<p style='color:green'>Học sinh này không sai câu nào hoặc dữ liệu chi tiết trống.</p>";
     } else {
         wrongList.forEach(item => {
             html += `<div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                <p><b>Câu:</b> ${item.question}</p>
+                <p><b>Câu:</b> ${item.question || "Không rõ nội dung"}</p>
                 <p style="color:red"><b>HS chọn:</b> ${item.userAnswer || "Không trả lời"}</p>
-                <p style="color:green"><b>Đáp án đúng:</b> ${item.correctAnswer}</p>
+                <p style="color:green"><b>Đáp án đúng:</b> ${item.correctAnswer || "Chưa cập nhật"}</p>
             </div>`;
         });
     }
