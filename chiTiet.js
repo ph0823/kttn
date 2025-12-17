@@ -95,11 +95,17 @@ function renderTable(list, lop) {
             <td style="padding:8px">${s.ten}</td>
             <td style="padding:8px; font-weight:bold; color:${s.score >= 5 ? 'green' : 'red'}">${s.score}</td>
             <td style="padding:8px">${s.focusCount || 0}</td>
-            <td style="padding:8px"><button onclick="showStudentDetail('${s.stt}')">Xem câu sai</button></td>
+            <td style="padding:8px"><button class="btn-detail" data-stt="${s.stt}">Xem câu sai</button></td>
         </tr>`;
     });
     html += "</table><div id='detail-box' style='margin-top:20px'></div>";
     document.getElementById("result-area").innerHTML = html;
+    document.querySelectorAll(".btn-detail").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const stt = btn.dataset.stt;
+        showStudentDetail(stt);
+      });
+    });
 }
 
 function showStudentDetail(stt) {
