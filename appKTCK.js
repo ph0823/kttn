@@ -41,7 +41,7 @@
 const CONFIG = {
   MIN_SCORE: 5,
   //GOOGLE_API: "https://script.google.com/macros/s/AKfycbw-OjUkZcMZCs2li0JvSKYvIImRIRR58XNsOAegoQqChrIeifc8hv_e8MUuHj4vclXsLw/exec",
-  GOOGLE_API: "/api/submit"
+  GOOGLE_API: "/api/submit",
   AUTO_SAVE_KEY: "ktck1_2025",
   FOCUS_MAX_WARN: 5, // số lần rời tab trước khi đánh dấu nghi ngờ
   allowCheatFeatures: true // bật/tắt các tính năng chống gian lận
@@ -365,8 +365,12 @@ async function submitQuiz(auto=false) {
   } finally {
     // show result screen
     $("result-info").innerHTML = `
-      <div class="submit-success-box">
-        <h2 style="color:#28a745">✅ Nộp bài ${serverAck ? "thành công" : "đã lưu (tạm)"}!</h2>
+      <div class="submit-success-box">        
+        <h2 style="color:${serverAck ? '#28a745' : '#dc3545'}">
+          ${serverAck
+            ? "✅ Nộp bài thành công!"
+            : "❌ Nộp bài không thành công – vui lòng báo giáo viên"}
+      </h2>
         <p>Học sinh: <b>${selectedStudent.ten}</b> - Lớp ${selectedStudent.LOP}</p>        
         <p style="color:#666;font-style:italic">Kết quả đã được ghi nhận ${serverAck ? "trên hệ thống." : "tạm thời (vui lòng kiểm tra lại)."} </p>
       </div>
@@ -412,7 +416,7 @@ function startTimer(){
 function saveAutosave() {
   try {
     const data = {
-      stt: selectedStudent ? selectedStudent.STT : null,
+      stt: selectedStudent ? selectedStudent.stt : null,
       quizIds: quiz.map(q=>q.id),
       answers,
       timeLeft,
