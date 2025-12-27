@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -205,12 +206,20 @@ function applyFilters() {
   if (sort === "stt") {
     filtered.sort((a, b) => a.stt - b.stt);
   } else if (sort === "score") {
-    filtered.sort((a, b) => {
-      let A = a.score ?? 999;
-      let B = b.score ?? 999;
-      return A - B;
-    });
-  }
+  filtered.sort((a, b) => {
+    // 1️⃣ So sánh theo điểm trước
+    let scoreA = a.score ?? 999;
+    let scoreB = b.score ?? 999;
+
+    if (scoreA !== scoreB) {
+      return scoreA - scoreB; // tăng dần theo điểm
+    }
+
+    // 2️⃣ Nếu điểm bằng nhau → sắp xếp theo STT
+    return a.stt - b.stt;
+  });
+}
+
 
   renderTable(filtered);
   detectMissingStudents(filtered);
